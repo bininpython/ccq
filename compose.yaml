@@ -4,9 +4,6 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
-    environment:
-      CCQ_ACCESS_PASSWORD: ${CCQ_ACCESS_PASSWORD:?Defina a senha no arquivo .env}
-      CCQ_SECURE_COOKIE: ${CCQ_SECURE_COOKIE:-0}
     volumes:
       - ccq-data:/app/data
 volumes:

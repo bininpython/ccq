@@ -1,10 +1,9 @@
 """CCQ: API e servidor estático; Python 3.12+, sem dependências externas."""
-import os, json, sqlite3, secrets, hashlib, hmac, time, math
+import os, json, sqlite3, secrets, math
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
-from http.cookies import SimpleCookie
 
 ROOT = Path(__file__).resolve().parent.parent
 DB = os.getenv('CCQ_DB', str(ROOT / 'data' / 'ccq.sqlite3'))
@@ -26,7 +25,6 @@ def init():
         CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY, roll_id INTEGER NOT NULL REFERENCES rolls(id), operator TEXT NOT NULL, shift TEXT NOT NULL, occurred TEXT NOT NULL, recorded TEXT NOT NULL, reason TEXT NOT NULL, serial TEXT NOT NULL, old_serial TEXT, diameter REAL, notes TEXT);
         CREATE TABLE IF NOT EXISTS inspections(id TEXT PRIMARY KEY, roll_id INTEGER NOT NULL REFERENCES rolls(id), operator TEXT NOT NULL, shift TEXT NOT NULL, occurred TEXT NOT NULL, checks TEXT NOT NULL, notes TEXT);
         CREATE TABLE IF NOT EXISTS tasks(id TEXT PRIMARY KEY, roll_id INTEGER NOT NULL REFERENCES rolls(id), title TEXT NOT NULL, status TEXT NOT NULL, created TEXT NOT NULL, updated TEXT NOT NULL, operator TEXT NOT NULL);
-        CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, operator TEXT NOT NULL, expires REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, task_id TEXT NOT NULL, operator TEXT NOT NULL, old_status TEXT, new_status TEXT NOT NULL, occurred TEXT NOT NULL);
         ''')
         for i in range(5):
@@ -95,16 +93,8 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(status); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body)))
         if cookie: self.send_header('Set-Cookie',cookie)
         self.end_headers(); self.wfile.write(body)
-    def session(self):
-        cookie=SimpleCookie(self.headers.get('Cookie','')); token=cookie.get('ccq_session')
-        if not token:return None
-        with connect() as db:
-            row=db.execute('SELECT operator FROM sessions WHERE token=? AND expires>?',(hashlib.sha256(token.value.encode()).hexdigest(),time.time())).fetchone()
-        return row['operator'] if row else None
     def do_GET(self):
-        if self.path == '/api/session': return self.send_json(200,{'operator':self.session()})
         if self.path.startswith('/api/'):
-            if not self.session():return self.send_json(401,{'error':'Entre novamente.'})
             if self.path != '/api/state':return self.send_json(404,{'error':'Não encontrado.'})
             with connect() as db:
                 result={table:[dict(r) for r in db.execute(f'SELECT * FROM {table}'+(' ORDER BY occurred DESC' if table in ['events','inspections','audit'] else ''))] for table in ['rolls','events','inspections','tasks','audit']}
@@ -120,25 +110,7 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < size <= 16000:raise ValueError('Tamanho inválido.')
             data=json.loads(self.rfile.read(size))
             if not isinstance(data,dict):raise ValueError('Dados inválidos.')
-            if self.path == '/api/login':
-                operator=required(data,'operator',100)
-                password=required(data,'password',300)
-                configured=os.environ['CCQ_ACCESS_PASSWORD']
-                if not hmac.compare_digest(password.encode(),configured.encode()):
-                    time.sleep(1)
-                    return self.send_json(401,{'error':'Senha incorreta.'})
-                token=secrets.token_urlsafe(32)
-                with connect() as db:
-                    db.execute('DELETE FROM sessions WHERE expires<?',(time.time(),))
-                    db.execute('INSERT INTO sessions VALUES(?,?,?)',(hashlib.sha256(token.encode()).hexdigest(),operator,time.time()+43200))
-                secure='; Secure' if os.getenv('CCQ_SECURE_COOKIE')=='1' else ''
-                return self.send_json(200,{'operator':operator},f'ccq_session={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200{secure}')
-            operator=self.session()
-            if not operator:return self.send_json(401,{'error':'Entre novamente.'})
-            if self.path == '/api/logout':
-                cookie=SimpleCookie(self.headers.get('Cookie',''))
-                with connect() as db: db.execute('DELETE FROM sessions WHERE token=?',(hashlib.sha256(cookie['ccq_session'].value.encode()).hexdigest(),))
-                return self.send_json(200,{},'ccq_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict')
+            operator=required(data,'operator',100)
             mutate(self.path,data,operator)
             self.send_json(200,{'ok':True})
         except (ValueError,TypeError,KeyError) as e:self.send_json(400,{'error':str(e)})
@@ -147,7 +119,6 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(500,{'error':'Não foi possível salvar. Tente novamente.'})
 
 if __name__=='__main__':
-    if len(os.getenv('CCQ_ACCESS_PASSWORD','')) < 12: raise SystemExit('Defina CCQ_ACCESS_PASSWORD com pelo menos 12 caracteres.')
     init()
     print('CCQ disponível na porta '+os.getenv('PORT','8000'),flush=True)
     ThreadingHTTPServer(('0.0.0.0',int(os.getenv('PORT','8000'))),Handler).serve_forever()

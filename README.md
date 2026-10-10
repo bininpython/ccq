@@ -1,58 +1,55 @@
-# CCQ · Monitoramento de rolos do forno RB1
+# CCQ · Condição dos rolos — Aperam RB1
 
-Aplicação completa em português com React, TypeScript e Vite, API Python e banco SQLite centralizado. Posições 0 a 4 conforme o mapa de referência; posição 0 externa ao forno. Nenhum dado operacional fictício é inserido.
+Painel em React + TypeScript, **sem login e sem senha**, com identidade visual roxa `#490B42` e laranja `#F1511B`. O painel abre diretamente. O nome do operador é obrigatório em cada registro e nas movimentações do kanban.
 
 ## Recursos
 
-- Mapa interativo do forno e cartões de condição por posição.
-- Cor calculada automaticamente: **0–5 dias verde**, **6–10 amarelo**, **11+ vermelho**. Sem data registrada: cinza.
-- Registro de troca: posição/local, identificação instalada e retirada, diâmetro opcional, motivo, data, horário, operador e observações.
-- Turno derivado da hora em Brasília: TN 23h–07h, TM 07h–15h, TT 15h–23h.
-- Histórico permanente, pesquisa por operador/motivo/identificação/turno, filtro por posição e exportação CSV compatível com Excel.
-- Checklist de superfície, ruído, vibração, alinhamento e mancais/refrigeração. Anomalia exige observação e abre uma atividade no kanban.
-- Kanban A fazer → Em andamento → Concluído, com movimentação por seletor acessível e trilha de alterações.
-- Banco compartilhado no servidor, sessões de 12 horas e atualização a cada 30 segundos. Registros concorrentes de troca são verificados por versão.
-- Interface responsiva para computador, tablet e celular.
+- Mapa das posições 0 a 4 conforme a referência: rolo 0 externo e 1–4 no forno.
+- Cores automáticas: **0–5 dias verde**, **6–10 amarelo**, **11+ vermelho**. Sem data: cinza. Contagem por dias de calendário em Brasília.
+- Trocas com data, hora, turno automático (TN 23–07, TM 07–15, TT 15–23), posição, motivo, identificação anterior/nova, diâmetro e observações.
+- Histórico de trocas pesquisável e exportável em CSV para Excel.
+- Checklist com anomalias que geram atividades no kanban.
+- Kanban com etapas, identificação de quem moveu e histórico das movimentações.
+- Atualização do painel a cada 30 segundos, proteção contra versões conflitantes e validação de datas futuras.
 
-## Iniciar com Docker
-
-1. Copie `.env.example` para `.env` e preencha `CCQ_ACCESS_PASSWORD` (mínimo 12 caracteres).
-2. Execute `docker compose up -d --build`.
-3. Abra `http://localhost:8000`. Informe nome completo e a senha configurada.
-
-Para outros computadores na mesma rede, use `http://IP-DO-SERVIDOR:8000` (com liberação da porta pela TI). Todos devem acessar **o mesmo servidor**, para compartilhar os registros. O volume `ccq-data` preserva o banco entre reinicializações. Não use `docker compose down -v`, pois remove o volume.
-
-## Executar sem Docker
-
-Requisitos: Node.js 22+ e Python 3.12+ com base de fusos IANA (Linux a inclui; no Windows, instale `tzdata` com pip).
+## Hospedagem estática (Vercel, por exemplo)
 
 ```bash
 npm ci
 npm run build
-# Configure CCQ_ACCESS_PASSWORD no ambiente antes de iniciar.
+```
+
+Configure o projeto como **Vite**, comando `npm run build` e saída `dist`. A página abre sem autenticação.
+
+Quando não existe `/api/state` (404/405 ou página HTML em vez de JSON), o painel usa armazenamento local do navegador. O aviso no topo informa esse modo. Os registros persistem após recarregar, mas **não são compartilhados entre computadores, navegadores ou endereços de site**. Limpar os dados do navegador remove os registros. Exporte o histórico regularmente; o CSV contém as trocas, não as inspeções nem o kanban. O modo local requer navegador atualizado com Web Locks e HTTPS (ou localhost).
+
+O painel não muda do servidor para armazenamento local durante uma falha de conexão. Falhas de rede/500 são exibidas como erro, para evitar registros em bancos diferentes inadvertidamente. Após adicionar uma API a uma hospedagem antes local, os registros locais não são migrados automaticamente.
+
+## Servidor compartilhado (para a equipe)
+
+```bash
+docker compose up -d --build
+```
+
+Abra `http://localhost:8000` ou `http://IP-DO-SERVIDOR:8000` na rede. Sem configuração de senha. O painel identifica a API e usa o banco SQLite centralizado. Todos devem acessar o mesmo servidor. O volume `ccq-data` preserva os registros. Não execute `docker compose down -v`, pois apaga o volume.
+
+Sem Docker: Node.js 22+, Python 3.12+ e base de fusos IANA (no Windows: `pip install tzdata`).
+
+```bash
+npm ci
+npm run build
 python server/app.py
 ```
 
-Em PowerShell: `$env:CCQ_ACCESS_PASSWORD="sua-senha-forte"`. Em bash: `export CCQ_ACCESS_PASSWORD='sua-senha-forte'`. Nunca coloque a senha no código nem faça commit do `.env`.
+Desenvolvimento: API acima + `npm run dev` em outro terminal. O Vite encaminha `/api` à porta 8000. `PORT` e `CCQ_DB` são variáveis opcionais. O backend Python requer servidor com disco persistente; hospedagem estática não executa o banco centralizado.
 
-Desenvolvimento: inicie a API e execute `npm run dev` em outro terminal. O Vite encaminha `/api` para a porta 8000. Produção serve a compilação e a API pelo mesmo endereço.
+## Acesso e dados
 
-## Hospedagem e acesso
+Acesso livre, conforme solicitado. O operador é identificado pelo nome informado, não autenticado. Quem tiver acesso ao endereço pode consultar e registrar dados. Para uso interno, disponibilize na rede da empresa/VPN. Não há exclusão de trocas pela interface. Bancos anteriores são preservados; a tabela de sessões antiga, caso exista, fica sem uso.
 
-Execute o contêiner em um servidor com disco persistente (rede interna, VPS ou serviço de contêiner). Este projeto **não funciona como site estático na Vercel**: precisa da API e do volume SQLite. Para acesso externo, use HTTPS com proxy reverso, defina `CCQ_SECURE_COOKIE=1` e limite acesso pela rede da empresa/VPN. A hospedagem não está provisionada neste repositório.
+Na primeira utilização, registre a data real de instalação por posição com motivo “Primeiro cadastro / instalação”. As cores representam tempo de uso, não medição física. O checklist é preenchido por pessoas, sem conexão com sensores. Trocas não encerram atividades automaticamente. Cada inspeção com anomalia gera uma atividade.
 
-O acesso inicial usa senha compartilhada e identificação declarada pelo operador. Não constitui autenticação individual de identidade nem assinatura eletrônica. Todos os usuários autenticados podem registrar atividades e mover cartões; não há exclusão ou edição de trocas pela interface. Caso a política da empresa exija usuários individuais/SSO e perfis de permissão, integrar antes da adoção oficial.
-
-## Regras e limitações operacionais
-
-- Contagem em **dias de calendário em America/Sao_Paulo**; à meia-noite começa o próximo dia. Não são blocos de 24 horas.
-- O relógio do servidor é a referência. Datas futuras e trocas anteriores à última instalação são rejeitadas.
-- Na primeira utilização, registre a data real da última instalação de cada posição com motivo “Primeiro cadastro / instalação”. Os registros seguintes formam o histórico.
-- Cores representam tempo desde a troca, não medição física nem autorização de operação. O checklist registra observação humana, sem conexão com sensores/CLP.
-- Uma troca não conclui automaticamente atividades de manutenção: elas devem ser avaliadas e encerradas pelo operador.
-- Cada checklist com anomalia gera uma atividade; inspeções repetidas podem criar novas atividades relacionadas.
-- CSV exporta todo o histórico de trocas, independentemente dos filtros da tela.
-- Faça backup consistente de `data/ccq.sqlite3` usando a API SQLite de backup (ou pare o serviço antes de copiar o banco e arquivos WAL). O arquivo contém histórico e sessões: proteja seu acesso. Teste a restauração periodicamente.
+Faça backup consistente do banco do servidor pela API de backup SQLite (ou pare o servidor antes de copiar os arquivos). CSV exporta todas as trocas, independentemente dos filtros.
 
 ## Verificação
 
@@ -61,14 +58,4 @@ npm test
 npm run build
 ```
 
-Os testes cobrem limites de cor, virada de dia/fuso, turnos, início sem dados, histórico, conflitos de troca/kanban, datas futuras e checklist com anomalias.
-
-## Estrutura
-
-- `src/main.tsx`: interface e fluxos operacionais.
-- `src/style.css`: sistema visual responsivo.
-- `server/app.py`: API, sessões, validação, persistência e servidor estático.
-- `tests/test_app.py`: testes das regras de negócio.
-- `Dockerfile` / `compose.yaml`: execução com volume persistente.
-
-Não existe integração automática com equipamentos: a automação é a contagem de dias, classificação, turno, atualização do painel e criação de atividades a partir do checklist.
+Testes Python da API sem login e regras de negócio; testes Node do armazenamento local, cores, troca, checklist, kanban e persistência. Os testes Node requerem Node 22.18+ ou 24+ (suporte a TypeScript sem compilação).

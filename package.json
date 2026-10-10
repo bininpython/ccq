@@ -1,1 +1,24 @@
-{"name":"ccq-rolos","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite --host 0.0.0.0","build":"tsc -b && vite build","test":"python -m unittest discover -s tests -v","start":"python server/app.py"},"dependencies":{"react":"^19.0.0","react-dom":"^19.0.0","lucide-react":"^0.468.0"},"devDependencies":{"typescript":"~5.7.2","vite":"^6.0.5","@vitejs/plugin-react":"^4.3.4","@types/react":"^19.0.0","@types/react-dom":"^19.0.0"}}
+{
+  "name": "ccq-rolos",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "test": "python -m unittest discover -s tests -v && node --test tests/storage.test.mjs",
+    "start": "python server/app.py"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "lucide-react": "^0.468.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2",
+    "vite": "^6.0.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}
