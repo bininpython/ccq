@@ -5,14 +5,20 @@
 /* Movimento ilustrativo: os números e os indicadores continuam fixos. */
 .chamber{overflow:hidden;background:linear-gradient(180deg,#f6efe5 0%,#f7e3c9 70%,#fac99f 100%)}
 .chamber>span{position:relative;z-index:2;color:#705544;font-weight:700}
-.furnace-fire{position:absolute;inset:auto 8px 0;height:100px;display:flex;justify-content:space-around;align-items:flex-end;pointer-events:none;background:radial-gradient(ellipse at bottom,#f1511b30,transparent 72%)}
-.fire-tongue{width:7%;max-width:55px;height:var(--flame-height);overflow:visible;transform-origin:50% 100%;animation:flame-flicker var(--flame-duration) ease-in-out var(--flame-delay) infinite alternate;opacity:.72}
-.flame-outer{fill:#f1511b}.flame-inner{fill:#ffcc64}
 .wheel{position:relative;isolation:isolate;overflow:hidden}
 .wheel-rotor{position:absolute;inset:3px;border:1px dashed var(--tone);border-radius:50%;opacity:.72;animation:roll-spin 4s linear infinite;background:repeating-conic-gradient(from 0deg,transparent 0deg 57deg,var(--tone) 57deg 63deg,transparent 63deg 120deg)}
 .wheel-number{position:relative;z-index:1;background:var(--wash);border:1px solid var(--tone);border-radius:50%;width:29px;height:29px;display:grid;place-items:center;font-size:17px;line-height:1}
 .map-footer{align-items:center;gap:12px;flex-wrap:wrap}.motion-toggle{padding:6px 9px;color:#78306a;background:#f3edf2;border:1px solid #e2d5df;border-radius:4px;font-size:10px}
-.motion-paused .wheel-rotor,.motion-paused .fire-tongue{animation-play-state:paused}
+.motion-paused .wheel-rotor{animation-play-state:paused}
 @keyframes roll-spin{to{transform:rotate(360deg)}}
-@keyframes flame-flicker{0%{transform:scaleX(.9) scaleY(.83) skewX(-5deg);opacity:.58}50%{transform:scaleX(1.08) scaleY(1) skewX(3deg);opacity:.8}100%{transform:scaleX(.93) scaleY(.9) skewX(-2deg);opacity:.65}}
-@media(prefers-reduced-motion:reduce){.wheel-rotor,.fire-tongue{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.wheel-rotor{animation:none!important}}
+/* Combustion rendered as continuous, softly layered thermal plumes. */
+.chamber{background:linear-gradient(180deg,#241d24 0%,#352023 40%,#542a20 100%);border-color:#9a8981;box-shadow:0 0 0 1px #85756f,inset 0 5px 18px #170f18aa}
+.chamber>span{color:#f4d9bb;font-size:10px;letter-spacing:2.4px;text-shadow:0 1px 3px #0008}
+.heat-lines{position:relative;z-index:1;border-color:#d2a17d24}
+.furnace-combustion{position:absolute;inset:25px 0 0;pointer-events:none;overflow:hidden}
+.furnace-radiance{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 115%,#ff8c284d 0%,#ec541b1c 40%,transparent 75%)}
+.fire-canvas{position:absolute;inset:0;width:100%;height:100%;filter:blur(1px);opacity:.92}
+.map-roll:not(:first-child)>small{color:#f7e7d8;text-shadow:0 1px 3px #26151f;background:#33212c80;padding:3px 6px;border-radius:3px;margin-top:-3px;margin-bottom:11px}
+.strip{z-index:1;background:#bbc1be;box-shadow:0 2px 2px #110d1366}
+.roll-track{z-index:2}
