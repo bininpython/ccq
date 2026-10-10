@@ -22,3 +22,11 @@
 .map-roll:not(:first-child)>small{color:#f7e7d8;text-shadow:0 1px 3px #26151f;background:#33212c80;padding:3px 6px;border-radius:3px;margin-top:-3px;margin-bottom:11px}
 .strip{z-index:1;background:#bbc1be;box-shadow:0 2px 2px #110d1366}
 .roll-track{z-index:2}
+/* Legendas alinhadas abaixo da estrutura do forno. */
+.furnace-map{height:330px;padding-bottom:18px}
+.map-roll .stand{margin-bottom:0}
+.roll-caption{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:7px;width:100%;min-height:76px;margin-top:36px;padding:0 8px;text-align:center}
+.map-roll .roll-caption strong{font-size:13px;line-height:18px;font-weight:700;margin:0}
+.map-roll .roll-caption b{font-size:12px;line-height:17px;font-weight:600;margin:0}
+.map-roll .roll-caption em{font-size:11px;line-height:16px;color:#766d76;margin:0;white-space:normal;text-wrap:balance}
+@media(min-width:1600px){.furnace-map{height:344px}}
