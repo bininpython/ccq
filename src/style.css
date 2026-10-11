@@ -118,3 +118,6 @@
 @media(max-width:1200px){.brush-upper{left:8%}.brush-lower{right:8%}}
 @media(max-width:800px){.brush-upper{left:10%}.brush-lower{right:10%}}
 @media(prefers-reduced-motion:reduce){.brush-roll,.bath-liquid:before,.bath-liquid:after,.bath-liquid i{animation:none!important}}
+
+/* Escovas em amarelo industrial Aperam. */
+.brush-roll{border-color:#a87800;background:repeating-conic-gradient(from 0deg,#ffd21f 0deg 5deg,#fff08a 5deg 9deg,#e5ad00 9deg 13deg);box-shadow:0 3px 7px #211c2445,inset 0 0 0 7px #fff5b85c}.brush-roll:before{border-color:#b37b00;background:radial-gradient(circle at 35% 35%,#fff8c7,#ffcf24 60%,#d69a00 100%);box-shadow:0 0 0 2px #70520a}:root[data-theme="dark"] .brush-roll{border-color:#ffd84d;background:repeating-conic-gradient(from 0deg,#ffdb35 0deg 5deg,#fff2a1 5deg 9deg,#e4ae0d 9deg 13deg);box-shadow:0 3px 7px #050407aa,inset 0 0 0 7px #ffffff42}
