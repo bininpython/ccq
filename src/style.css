@@ -112,3 +112,9 @@
 @media(max-width:950px){.pickling-flow{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;padding:25px 20px}.pickling-flow>.flow-arrow{display:none}.process-strip{display:none}.process-stage{margin-bottom:8px}}
 @media(max-width:800px){.pickling-flow{grid-template-columns:1fr;gap:18px;padding:22px 18px}.pickling-flow>.flow-arrow{display:grid;transform:rotate(90deg);height:18px}.process-strip{display:none}.bath,.brush-unit{height:132px}.brush-roll{width:58px;height:58px;left:calc(50% - 29px)}.brush-roll:before{inset:20px}.stage-label{margin-bottom:10px}.pickling-legend{flex-direction:column;align-items:flex-start}.pickling-legend .motion-toggle{margin:0}}
 @media(prefers-reduced-motion:reduce){.brush-roll,.material-strip,.material-pass,.bath-liquid:before,.bath-liquid:after,.bath-liquid i,.flow-arrow{animation:none!important}}
+
+/* Posição das escovas conforme o desenho de referência: superior à esquerda, inferior à direita. */
+.process-strip{display:none!important}.material-strip{display:none!important}.brush-unit:before,.brush-unit:after{display:none}.brush-unit{background:#fff;border:3px solid #514751;border-radius:22px;box-shadow:none}.brush-roll{width:58px;height:58px;left:auto;animation:brush-spin 1.15s linear infinite}.brush-upper{top:9px;left:10%}.brush-lower{bottom:9px;right:10%;left:auto;animation-direction:reverse}.material-pass{animation:none!important;background:linear-gradient(180deg,#fff,#bbb1bc 48%,#766b77 52%,#e6dfe6);box-shadow:0 2px 5px #211c2445}.bath-liquid:before,.bath-liquid:after,.bath-liquid i{animation-play-state:running}
+@media(max-width:1200px){.brush-upper{left:8%}.brush-lower{right:8%}}
+@media(max-width:800px){.brush-upper{left:10%}.brush-lower{right:10%}}
+@media(prefers-reduced-motion:reduce){.brush-roll,.bath-liquid:before,.bath-liquid:after,.bath-liquid i{animation:none!important}}
