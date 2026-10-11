@@ -59,3 +59,10 @@ npm run build
 ```
 
 Testes Python da API sem login e regras de negócio; testes Node do armazenamento local, cores, troca, checklist, kanban e persistência. Os testes Node requerem Node 22.18+ ou 24+ (suporte a TypeScript sem compilação).
+
+
+## Dashboard de estatísticas
+
+A aba Estatísticas substitui o kanban de manutenção e apresenta trocas no período, motivo principal, turno com maior frequência, intervalo médio entre trocas, tendência mensal, distribuição por motivo/turno/posição e tempo médio entre trocas por posição. O período pode ser filtrado por 30 dias, 90 dias, 12 meses ou todo o histórico. O intervalo é calculado entre duas trocas consecutivas da mesma posição e considera o motivo do segundo registro; o primeiro cadastro fornece o ponto de partida.
+
+O botão “Modo noturno” no menu alterna a aparência e guarda a escolha no navegador.
