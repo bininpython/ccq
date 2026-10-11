@@ -37,3 +37,62 @@
 @media(max-width:800px){.theme-toggle{width:auto;margin:12px 0 0;white-space:nowrap}.theme-toggle i{display:none}.dashboard-toolbar{align-items:flex-start}.dashboard-toolbar label{flex-direction:column;align-items:flex-start;gap:6px}.dashboard-toolbar select{min-width:145px}.analytics-grid{grid-template-columns:1fr}.trend-card{grid-column:auto}.analytics-kpi{padding:15px;min-height:115px}.analytics-kpi>strong{font-size:24px}.analytics-kpi>strong.kpi-text{font-size:13px}.interval-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.chart-card{padding:17px}.reason-chart{gap:16px}.donut{width:115px;height:115px}.donut-hole{width:69px;height:69px}.legend{max-width:58%}.chart-footnote{font-size:8px}}
 
 .analytics-kpi>strong.kpi-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+
+/* Modo noturno: contraste consistente em formulários, diálogos e telas de dados. */
+:root[data-theme="dark"]{color-scheme:dark}
+:root[data-theme="dark"] .modal{background:#211c24;color:#f2eaf2;border:1px solid #493e4c;box-shadow:0 24px 72px #09070ccc}
+:root[data-theme="dark"] .modal h2,
+:root[data-theme="dark"] .modal h3{color:#f7edf5}
+:root[data-theme="dark"] .modal .eyebrow{color:#e6a9d1}
+:root[data-theme="dark"] .modal>p,
+:root[data-theme="dark"] .modal form>p{color:#c8bacb}
+:root[data-theme="dark"] .modal label,
+:root[data-theme="dark"] .kanban-operator{color:#ded3e0}
+:root[data-theme="dark"] .modal input,
+:root[data-theme="dark"] .modal select,
+:root[data-theme="dark"] .modal textarea,
+:root[data-theme="dark"] .dashboard-toolbar select,
+:root[data-theme="dark"] .task select{background:#17141a;color:#f5edf5;border:1px solid #56485a;color-scheme:dark}
+:root[data-theme="dark"] .modal input::placeholder,
+:root[data-theme="dark"] .modal textarea::placeholder,
+:root[data-theme="dark"] .filters input::placeholder{color:#a89aaa;opacity:1}
+:root[data-theme="dark"] .modal select option,
+:root[data-theme="dark"] .dashboard-toolbar select option,
+:root[data-theme="dark"] .task select option{background:#211c24;color:#f5edf5}
+:root[data-theme="dark"] .modal input[readonly]{background:#29232d;color:#d5c6d8}
+:root[data-theme="dark"] .modal .close{color:#dfcfe0}
+:root[data-theme="dark"] .modal .close:hover{background:#382b3b;border-radius:6px}
+:root[data-theme="dark"] .modal .secondary{background:#302733;border-color:#59455b;color:#f1d8eb}
+:root[data-theme="dark"] .modal .primary{background:#f1511b;color:#fff}
+:root[data-theme="dark"] .modal .error{background:#482625;color:#ffd6d0;border:1px solid #813c36}
+:root[data-theme="dark"] .modal .notice{background:#233d32;color:#d4f2dd;border:1px solid #426a52}
+:root[data-theme="dark"] .modal .detail-list dt,
+:root[data-theme="dark"] .modal .timeline p{color:#c0b1c3}
+:root[data-theme="dark"] .modal .detail-list dd,
+:root[data-theme="dark"] .modal .timeline b{color:#f0e5f0}
+:root[data-theme="dark"] .modal .timeline{border-color:#9d5c8e}
+:root[data-theme="dark"] .modal .check-items label{color:#e3d8e3}
+:root[data-theme="dark"] .overlay{background:#08060bb8;backdrop-filter:blur(7px)}
+:root[data-theme="dark"] .badge.green{background:#203d2d;color:#a9e0b9}
+:root[data-theme="dark"] .badge.yellow{background:#443719;color:#f0d18b}
+:root[data-theme="dark"] .badge.red{background:#492723;color:#f3aaa0}
+:root[data-theme="dark"] .badge.unknown{background:#343039;color:#d0c5d1}
+:root[data-theme="dark"] .notice{background:#233d32;color:#d4f2dd;border:1px solid #426a52}
+:root[data-theme="dark"] .error{background:#482625;color:#ffd6d0;border:1px solid #813c36}
+:root[data-theme="dark"] .inspection-items p,
+:root[data-theme="dark"] .inspection summary{color:#e4d9e6}
+:root[data-theme="dark"] .inspection-items b{color:#f3e5f1}
+:root[data-theme="dark"] .task details p{color:#c8bacb}
+:root[data-theme="dark"] .toolbar p,
+:root[data-theme="dark"] .dashboard-toolbar label{color:#c8bacb}
+:root[data-theme="dark"] .motion-toggle{background:#302633;border-color:#59455b;color:#f0cde5}
+:root[data-theme="dark"] .text-button,
+:root[data-theme="dark"] footer button{color:#edb9db}
+:root[data-theme="dark"] .roll-card button{border-color:#39303c;color:#edb9db}
+:root[data-theme="dark"] .stat i{box-shadow:0 0 0 3px #ffffff0c}
+:root[data-theme="dark"] :focus-visible{outline-color:#f08bc4}
+:root[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator{filter:invert(.85)}
+:root[data-theme="dark"] .dashboard-note strong{color:#edc5df}
+:root[data-theme="dark"] .footnote{color:#b0a4b1}
+:root[data-theme="dark"] .map-footer .dot{background:#83d5a1}
+@media(prefers-reduced-motion:reduce){.app{transition:none}}
