@@ -1,8 +1,11 @@
-# CCQ · Condição dos rolos — Aperam RB1
+# RB1 Roll · Condição dos rolos — Aperam RB1
 
 Painel em React + TypeScript, **sem login e sem senha**, com identidade visual roxa `#490B42` e laranja `#F1511B`. O painel abre diretamente. O nome do operador é obrigatório em cada registro e nas movimentações do kanban.
 
 ## Recursos
+
+- Diagrama do forno em SVG: carcaça, revestimento refratário, queimadores e chamas animadas; a tira passa por cima dos rolos 0 a 4. Clique em um rolo para abrir os detalhes.
+- Cartões por posição com barra de campanha (limites de 6 e 11 dias).
 
 - Mapa das posições 0 a 4 conforme a referência: rolo 0 externo e 1–4 no forno.
 - Cores automáticas: **0–5 dias verde**, **6–10 amarelo**, **11+ vermelho**. Sem data: cinza. Contagem por dias de calendário em Brasília.
@@ -66,3 +69,7 @@ Testes Python da API sem login e regras de negócio; testes Node do armazenament
 A aba Estatísticas substitui o kanban de manutenção e apresenta trocas no período, motivo principal, turno com maior frequência, intervalo médio entre trocas, tendência mensal, distribuição por motivo/turno/posição e tempo médio entre trocas por posição. O período pode ser filtrado por 30 dias, 90 dias, 12 meses ou todo o histórico. O intervalo é calculado entre duas trocas consecutivas da mesma posição e considera o motivo do segundo registro; o primeiro cadastro fornece o ponto de partida.
 
 O botão “Modo noturno” no menu alterna a aparência e guarda a escolha no navegador.
+
+## Compatibilidade de nome
+
+O sistema foi renomeado de CCQ para **RB1 Roll**. Para não perder registros existentes, os identificadores internos foram mantidos: chave local `ccq.local.v1`, tema `ccq.theme`, cabeçalho `X-CCQ-Request`, variável `CCQ_DB` e o volume Docker `ccq-data`.

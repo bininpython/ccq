@@ -1,4 +1,4 @@
-"""CCQ: API e servidor estático; Python 3.12+, sem dependências externas."""
+"""RB1 Roll: API e servidor estático; Python 3.12+, sem dependências externas."""
 import os, json, sqlite3, secrets, math
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -120,5 +120,5 @@ class Handler(SimpleHTTPRequestHandler):
 
 if __name__=='__main__':
     init()
-    print('CCQ disponível na porta '+os.getenv('PORT','8000'),flush=True)
+    print('RB1 Roll disponível na porta '+os.getenv('PORT','8000'),flush=True)
     ThreadingHTTPServer(('0.0.0.0',int(os.getenv('PORT','8000'))),Handler).serve_forever()

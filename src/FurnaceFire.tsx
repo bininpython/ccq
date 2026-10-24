@@ -1,59 +1,103 @@
-import {useEffect, useRef} from 'react';
+import {useEffect,useRef} from 'react';
 
-/** Decorative thermal illustration, independent of equipment telemetry. */
-export function FurnaceFire({animated}:{animated:boolean}) {
+/** Decorative combustion illustration, independent of equipment telemetry.
+ * Particle flames rise from a row of burners and are drawn with additive blending. */
+type Particle={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;seed:number;ember:boolean};
+const burners=[.07,.2,.33,.46,.59,.72,.85,.96];
+
+function sprite(stops:[number,string][]){
+ const c=document.createElement('canvas');c.width=c.height=64;
+ const g=c.getContext('2d')!;const r=g.createRadialGradient(32,32,0,32,32,32);
+ for(const [o,col] of stops)r.addColorStop(o,col);
+ g.fillStyle=r;g.fillRect(0,0,64,64);return c;
+}
+
+export function FurnaceFire({animated}:{animated:boolean}){
  const canvasRef=useRef<HTMLCanvasElement>(null);
- const phase=useRef(0);
  useEffect(()=>{
-  const canvas=canvasRef.current;
-  const context=canvas?.getContext('2d');
-  if(!canvas||!context)return;
+  const canvas=canvasRef.current;const ctx=canvas?.getContext('2d');
+  if(!canvas||!ctx)return;
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
-  let width=1,height=1,frame=0,last=0,visible=true,disposed=false;
-  const wave=(x:number,t:number)=>Math.sin(x*1.73+t)*.52+Math.sin(x*3.91-t*1.37)*.3+Math.sin(x*7.17+t*.71)*.18;
-  function draw(){
-   const ctx=context!;const t=phase.current;
-   ctx.clearRect(0,0,width,height);
-   const ambient=ctx.createLinearGradient(0,0,0,height);
-   ambient.addColorStop(0,'rgba(67,22,17,0)');ambient.addColorStop(.45,'rgba(151,43,15,.10)');ambient.addColorStop(1,'rgba(255,90,13,.5)');
-   ctx.fillStyle=ambient;ctx.fillRect(0,0,width,height);
-   // Overlapping, independently deforming plumes: ember, orange body, golden core.
-   const count=Math.max(14,Math.ceil(width/38));const spacing=width/(count-1);
-   for(let layer=0;layer<3;layer++){
-    for(let i=-1;i<=count;i++){
-     const seed=i*2.399+layer*.9;
-     const x=i*spacing+wave(seed,t*.55)*spacing*.17;
-     const length=height*(.34+.24*(.5+.5*Math.sin(seed*2.1))+.12*wave(seed,t*1.05))*(1-layer*.22);
-     const breadth=spacing*(.66-layer*.13);
-     const tip=x+wave(seed+1,t*1.3)*spacing*.8;
-     const bend=wave(seed+3,t*.95)*spacing*.7;
-     const y=height-length;
-     const gradient=ctx.createLinearGradient(0,height,0,y);
-     if(layer===0){gradient.addColorStop(0,'rgba(246,62,8,.7)');gradient.addColorStop(.55,'rgba(238,61,8,.45)');gradient.addColorStop(1,'rgba(231,45,9,0)')}
-     else if(layer===1){gradient.addColorStop(0,'rgba(255,195,70,.86)');gradient.addColorStop(.42,'rgba(255,125,19,.66)');gradient.addColorStop(1,'rgba(255,78,9,0)')}
-     else{gradient.addColorStop(0,'rgba(255,242,179,.9)');gradient.addColorStop(.38,'rgba(255,198,68,.7)');gradient.addColorStop(1,'rgba(255,151,21,0)')}
-     ctx.beginPath();ctx.moveTo(x-breadth,height+8);
-     ctx.bezierCurveTo(x-breadth*1.05,height-length*.36,tip-bend-breadth*.24,y+length*.24,tip,y);
-     ctx.bezierCurveTo(tip+bend*.6,y+length*.32,x+breadth*.85,height-length*.22,x+breadth,height+8);
-     ctx.closePath();ctx.fillStyle=gradient;ctx.fill();
-    }
-   }
-   const bed=ctx.createLinearGradient(0,height-22,0,height);
-   bed.addColorStop(0,'rgba(255,117,25,0)');bed.addColorStop(.8,'rgba(255,169,45,.48)');bed.addColorStop(1,'rgba(255,222,121,.72)');
-   ctx.fillStyle=bed;ctx.fillRect(0,height-22,width,22);
+  const sprites=[
+   sprite([[0,'rgba(255,255,236,1)'],[.35,'rgba(255,236,160,.75)'],[1,'rgba(255,200,80,0)']]),
+   sprite([[0,'rgba(255,214,102,.95)'],[.4,'rgba(255,150,40,.55)'],[1,'rgba(255,110,20,0)']]),
+   sprite([[0,'rgba(255,128,30,.85)'],[.45,'rgba(236,70,18,.42)'],[1,'rgba(200,40,10,0)']]),
+   sprite([[0,'rgba(190,46,18,.55)'],[.5,'rgba(120,24,14,.25)'],[1,'rgba(60,10,10,0)']]),
+  ];
+  const ember=sprite([[0,'rgba(255,246,200,1)'],[.3,'rgba(255,170,60,.8)'],[1,'rgba(255,90,20,0)']]);
+  let width=1,height=1,frame=0,last=0,visible=true,disposed=false,time=0;
+  let particles:Particle[]=[];
+  function spawn(){
+   const b=burners[Math.floor(Math.random()*burners.length)];
+   const isEmber=Math.random()<.035;
+   const max=isEmber?1.6+Math.random()*1.4:.75+Math.random()*.7;
+   particles.push({x:(b+(Math.random()-.5)*.055)*width,y:height-2,vx:(Math.random()-.5)*height*.08,vy:-height*(isEmber?.32+Math.random()*.3:.4+Math.random()*.38),life:0,max,size:height*(isEmber?.012+Math.random()*.01:.09+Math.random()*.09),seed:Math.random()*100,ember:isEmber});
   }
-  function tick(timestamp:number){
+  function step(dt:number){
+   time+=dt;
+   const rate=width*.6*dt;
+   for(let i=0;i<rate;i++)spawn();
+   for(const p of particles){
+    p.life+=dt;
+    const k=p.life/p.max;
+    // Lateral turbulence; plumes narrow and accelerate as they rise.
+    p.vx+=Math.sin(time*3.1+p.seed)*height*.25*dt;
+    p.x+=p.vx*dt;p.y+=p.vy*dt*(1+k*.5);
+    if(!p.ember)p.size*=1-dt*.55;
+   }
+   particles=particles.filter(p=>p.life<p.max&&p.y>-20);
+   if(particles.length>900)particles.splice(0,particles.length-900);
+  }
+  function draw(){
+   ctx!.clearRect(0,0,width,height);
+   // Back wall radiance.
+   const wall=ctx!.createLinearGradient(0,0,0,height);
+   wall.addColorStop(0,'rgba(40,14,16,0)');wall.addColorStop(.55,'rgba(150,40,14,.28)');wall.addColorStop(1,'rgba(255,110,30,.55)');
+   ctx!.fillStyle=wall;ctx!.fillRect(0,0,width,height);
+   ctx!.globalCompositeOperation='lighter';
+   for(const b of burners){
+    const flicker=.75+.25*Math.sin(time*9+b*40);
+    const g=ctx!.createRadialGradient(b*width,height,0,b*width,height,height*.5);
+    g.addColorStop(0,`rgba(255,150,50,${.3*flicker})`);g.addColorStop(1,'rgba(255,80,20,0)');
+    ctx!.fillStyle=g;ctx!.fillRect(b*width-height*.5,height*.5,height,height*.5);
+   }
+   for(const p of particles){
+    const k=p.life/p.max;
+    if(p.ember){
+     ctx!.globalAlpha=(1-k)*(.6+.4*Math.sin(time*20+p.seed));
+     const s=p.size*2.4;ctx!.drawImage(ember,p.x-s/2,p.y-s/2,s,s);continue;
+    }
+    const img=sprites[k<.14?0:k<.38?1:k<.7?2:3];
+    ctx!.globalAlpha=Math.max(0,(1-k)*(k<.1?k/.1:1))*(k<.14?.3:.42);
+    const s=p.size*(1+k*.5);
+    ctx!.drawImage(img,p.x-s/2,p.y-s*.9,s,s*1.8);
+   }
+   ctx!.globalAlpha=1;ctx!.globalCompositeOperation='source-over';
+   // Hot bed at the burner line.
+   const bed=ctx!.createLinearGradient(0,height-height*.1,0,height);
+   bed.addColorStop(0,'rgba(255,140,40,0)');bed.addColorStop(1,'rgba(255,224,150,.55)');
+   ctx!.fillStyle=bed;ctx!.fillRect(0,height*.9,width,height*.1);
+  }
+  function tick(ts:number){
    frame=0;if(disposed||!animated||reduced.matches||!visible||document.hidden)return;
-   if(timestamp-last>=1000/30){phase.current+=Math.min((timestamp-last)/1000,.05);last=timestamp;draw()}
+   if(ts-last>=1000/40){step(Math.min((ts-last)/1000,.05));last=ts;draw()}
    frame=requestAnimationFrame(tick);
   }
   function sync(){cancelAnimationFrame(frame);frame=0;last=performance.now();draw();if(animated&&!reduced.matches&&visible&&!document.hidden)frame=requestAnimationFrame(tick)}
-  function resize(){const box=canvas!.getBoundingClientRect();width=box.width;height=box.height;const dpr=Math.min(window.devicePixelRatio||1,1.5);canvas!.width=Math.round(width*dpr);canvas!.height=Math.round(height*dpr);context!.setTransform(dpr,0,0,dpr,0,0);draw()}
+  function warm(){particles=[];for(let i=0;i<60;i++)step(1/30)}
+  function resize(){
+   const box=canvas!.getBoundingClientRect();if(!box.width||!box.height)return;
+   const changed=Math.abs(box.width-width)>1||Math.abs(box.height-height)>1;
+   width=box.width;height=box.height;
+   const dpr=Math.min(window.devicePixelRatio||1,1.5);
+   canvas!.width=Math.round(width*dpr);canvas!.height=Math.round(height*dpr);ctx!.setTransform(dpr,0,0,dpr,0,0);
+   if(changed)warm();draw();
+  }
   const observer=new ResizeObserver(resize);observer.observe(canvas);
   const intersection=new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;sync()});intersection.observe(canvas);
   document.addEventListener('visibilitychange',sync);reduced.addEventListener('change',sync);
   resize();sync();
   return()=>{disposed=true;cancelAnimationFrame(frame);observer.disconnect();intersection.disconnect();document.removeEventListener('visibilitychange',sync);reduced.removeEventListener('change',sync)};
  },[animated]);
- return <div className="furnace-combustion" aria-hidden="true"><div className="furnace-radiance"/><canvas ref={canvasRef} className="fire-canvas"/></div>;
+ return <canvas ref={canvasRef} className="fire-canvas" aria-hidden="true"/>;
 }
