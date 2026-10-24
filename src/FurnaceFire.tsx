@@ -1,7 +1,7 @@
 import {useEffect,useRef} from 'react';
 
 /** Decorative combustion illustration, independent of equipment telemetry.
- * Particle flames rise from a row of burners and are drawn with additive blending. */
+ * Particle flames rise from a row of burners and stay low and translucent so the rolls remain readable. */
 type Particle={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;seed:number;ember:boolean};
 const burners=[.07,.2,.33,.46,.59,.72,.85,.96];
 
@@ -19,29 +19,29 @@ export function FurnaceFire({animated}:{animated:boolean}){
   if(!canvas||!ctx)return;
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   const sprites=[
-   sprite([[0,'rgba(255,255,236,1)'],[.35,'rgba(255,236,160,.75)'],[1,'rgba(255,200,80,0)']]),
-   sprite([[0,'rgba(255,214,102,.95)'],[.4,'rgba(255,150,40,.55)'],[1,'rgba(255,110,20,0)']]),
-   sprite([[0,'rgba(255,128,30,.85)'],[.45,'rgba(236,70,18,.42)'],[1,'rgba(200,40,10,0)']]),
-   sprite([[0,'rgba(190,46,18,.55)'],[.5,'rgba(120,24,14,.25)'],[1,'rgba(60,10,10,0)']]),
+   sprite([[0,'rgba(255,214,120,1)'],[.5,'rgba(255,180,80,.5)'],[1,'rgba(255,160,60,0)']]),
+   sprite([[0,'rgba(255,160,60,1)'],[.5,'rgba(255,130,40,.45)'],[1,'rgba(255,110,30,0)']]),
+   sprite([[0,'rgba(244,110,40,1)'],[.5,'rgba(236,90,30,.4)'],[1,'rgba(220,70,20,0)']]),
+   sprite([[0,'rgba(220,90,40,.8)'],[.5,'rgba(200,70,30,.3)'],[1,'rgba(180,60,30,0)']]),
   ];
   const ember=sprite([[0,'rgba(255,246,200,1)'],[.3,'rgba(255,170,60,.8)'],[1,'rgba(255,90,20,0)']]);
   let width=1,height=1,frame=0,last=0,visible=true,disposed=false,time=0;
   let particles:Particle[]=[];
   function spawn(){
    const b=burners[Math.floor(Math.random()*burners.length)];
-   const isEmber=Math.random()<.035;
-   const max=isEmber?1.6+Math.random()*1.4:.75+Math.random()*.7;
-   particles.push({x:(b+(Math.random()-.5)*.055)*width,y:height-2,vx:(Math.random()-.5)*height*.08,vy:-height*(isEmber?.32+Math.random()*.3:.4+Math.random()*.38),life:0,max,size:height*(isEmber?.012+Math.random()*.01:.09+Math.random()*.09),seed:Math.random()*100,ember:isEmber});
+   const isEmber=Math.random()<.012;
+   const max=isEmber?1.2+Math.random()*.8:.7+Math.random()*.5;
+   particles.push({x:(b+(Math.random()-.5)*.055)*width,y:height-2,vx:(Math.random()-.5)*height*.04,vy:-height*(isEmber?.2+Math.random()*.15:.18+Math.random()*.16),life:0,max,size:height*(isEmber?.008+Math.random()*.006:.07+Math.random()*.05),seed:Math.random()*100,ember:isEmber});
   }
   function step(dt:number){
    time+=dt;
-   const rate=width*.6*dt;
+   const rate=width*.35*dt;
    for(let i=0;i<rate;i++)spawn();
    for(const p of particles){
     p.life+=dt;
     const k=p.life/p.max;
     // Lateral turbulence; plumes narrow and accelerate as they rise.
-    p.vx+=Math.sin(time*3.1+p.seed)*height*.25*dt;
+    p.vx+=Math.sin(time*2.2+p.seed)*height*.1*dt;
     p.x+=p.vx*dt;p.y+=p.vy*dt*(1+k*.5);
     if(!p.ember)p.size*=1-dt*.55;
    }
@@ -51,31 +51,30 @@ export function FurnaceFire({animated}:{animated:boolean}){
   function draw(){
    ctx!.clearRect(0,0,width,height);
    // Back wall radiance.
-   const wall=ctx!.createLinearGradient(0,0,0,height);
-   wall.addColorStop(0,'rgba(40,14,16,0)');wall.addColorStop(.55,'rgba(150,40,14,.28)');wall.addColorStop(1,'rgba(255,110,30,.55)');
-   ctx!.fillStyle=wall;ctx!.fillRect(0,0,width,height);
-   ctx!.globalCompositeOperation='lighter';
+   const wall=ctx!.createLinearGradient(0,height*.55,0,height);
+   wall.addColorStop(0,'rgba(255,150,70,0)');wall.addColorStop(1,'rgba(255,140,60,.22)');
+   ctx!.fillStyle=wall;ctx!.fillRect(0,height*.55,width,height*.45);
    for(const b of burners){
-    const flicker=.75+.25*Math.sin(time*9+b*40);
-    const g=ctx!.createRadialGradient(b*width,height,0,b*width,height,height*.5);
-    g.addColorStop(0,`rgba(255,150,50,${.3*flicker})`);g.addColorStop(1,'rgba(255,80,20,0)');
-    ctx!.fillStyle=g;ctx!.fillRect(b*width-height*.5,height*.5,height,height*.5);
+    const flicker=.85+.15*Math.sin(time*5+b*40);
+    const g=ctx!.createRadialGradient(b*width,height,0,b*width,height,height*.22);
+    g.addColorStop(0,`rgba(255,150,60,${.25*flicker})`);g.addColorStop(1,'rgba(255,120,40,0)');
+    ctx!.fillStyle=g;ctx!.fillRect(b*width-height*.22,height*.78,height*.44,height*.22);
    }
    for(const p of particles){
     const k=p.life/p.max;
     if(p.ember){
-     ctx!.globalAlpha=(1-k)*(.6+.4*Math.sin(time*20+p.seed));
+     ctx!.globalAlpha=(1-k)*.5;
      const s=p.size*2.4;ctx!.drawImage(ember,p.x-s/2,p.y-s/2,s,s);continue;
     }
-    const img=sprites[k<.14?0:k<.38?1:k<.7?2:3];
-    ctx!.globalAlpha=Math.max(0,(1-k)*(k<.1?k/.1:1))*(k<.14?.3:.42);
+    const img=sprites[k<.25?0:k<.5?1:k<.75?2:3];
+    ctx!.globalAlpha=Math.max(0,(1-k)*(k<.15?k/.15:1))*.32;
     const s=p.size*(1+k*.5);
-    ctx!.drawImage(img,p.x-s/2,p.y-s*.9,s,s*1.8);
+    ctx!.drawImage(img,p.x-s/2,p.y-s,s,s*2);
    }
-   ctx!.globalAlpha=1;ctx!.globalCompositeOperation='source-over';
+   ctx!.globalAlpha=1;
    // Hot bed at the burner line.
    const bed=ctx!.createLinearGradient(0,height-height*.1,0,height);
-   bed.addColorStop(0,'rgba(255,140,40,0)');bed.addColorStop(1,'rgba(255,224,150,.55)');
+   bed.addColorStop(0,'rgba(255,140,40,0)');bed.addColorStop(1,'rgba(255,190,110,.3)');
    ctx!.fillStyle=bed;ctx!.fillRect(0,height*.9,width,height*.1);
   }
   function tick(ts:number){

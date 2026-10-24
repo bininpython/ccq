@@ -144,27 +144,37 @@ header p{margin:6px 0 0;font-size:14px}
 .furnace-scroll{overflow-x:auto;background:var(--diagram-bg)}
 .furnace-diagram{min-width:820px;padding:18px 26px 6px}
 .furnace-stage{position:relative;width:100%}
-.furnace-hot{position:absolute;overflow:hidden;background:radial-gradient(120% 90% at 50% 110%,#7a2614 0%,#3a1414 45%,#1c0e12 100%)}
+.furnace-diagram{--fd-s-top:#f1edf2;--fd-s-bot:#d8d0da;--fd-edge:#c3bac6;--fd-lining:#f4e9df;--fd-joint:#e4d3c5;--fd-ch-top:#fdf8f4;--fd-ch-bot:#fbe3cf;--fd-pill:#ffffff;--fd-pill-border:#e3dbe4;--fd-pill-text:#4b3d4d;--fd-title:#6b5d6d;--fd-dark:#8c8290}
+:root[data-theme="dark"] .furnace-diagram{--fd-s-top:#3d3542;--fd-s-bot:#2b2530;--fd-edge:#4c4352;--fd-lining:#3b302e;--fd-joint:#2f2524;--fd-ch-top:#1f191d;--fd-ch-bot:#3a2620;--fd-pill:#2a242e;--fd-pill-border:#463d4b;--fd-pill-text:#eadfe9;--fd-title:#c9bccb;--fd-dark:#5c5361}
+.furnace-hot{position:absolute;overflow:hidden;background:linear-gradient(180deg,var(--fd-ch-top) 0%,var(--fd-ch-top) 45%,var(--fd-ch-bot) 100%)}
 .fire-canvas{position:absolute;inset:0;width:100%;height:100%}
 .furnace-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.fd-floor{opacity:.55}
+.fd-s-top{stop-color:var(--fd-s-top)}.fd-s-bot{stop-color:var(--fd-s-bot)}
+.fd-lining{fill:var(--fd-lining)}.fd-joint{fill:none;stroke:var(--fd-joint);stroke-width:1}
+.fd-hot-edge{stroke:var(--fd-edge);stroke-width:1.5}
+.fd-rivet{fill:var(--fd-edge)}.fd-cap{fill:var(--fd-edge)}
+.fd-burner{fill:var(--fd-s-bot);stroke:var(--fd-edge)}
+.fd-slot{fill:var(--fd-dark);opacity:.35}
+.fd-chock{fill:var(--fd-s-bot);stroke:var(--fd-edge)}
+.fd-floor{opacity:.5}
 .fd-hatch-line{stroke:var(--floor)}
 .fd-floor-line{stroke:var(--floor);stroke-width:2}
-.fd-title{font-family:var(--display);font-size:12px;font-weight:800;letter-spacing:.26em;fill:#f3e3d6}
-.fd-burner-tip{fill:#ffd27a;filter:drop-shadow(0 0 4px #ff9a3c)}
-.fd-pill{fill:#1c1219d9;stroke:#ffffff26}
-.fd-pill-text{font-family:Inter,sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;fill:#f7e8dd}
+.fd-title{font-family:var(--display);font-size:12px;font-weight:800;letter-spacing:.26em;fill:var(--fd-title)}
+.fd-burner-tip{fill:#ffb35c;opacity:.85}
+.fd-pill{fill:var(--fd-pill);stroke:var(--fd-pill-border)}
+.fd-pill-text{font-family:Inter,sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;fill:var(--fd-pill-text)}
 .roll-node{cursor:pointer;outline:none}
-.roll-node .fd-ring{fill:none;stroke:var(--tone);stroke-width:5;transition:stroke-width .15s}
-.roll-node:hover .fd-ring,.roll-node:focus-visible .fd-ring{stroke-width:8}
+.roll-node .fd-halo{fill:var(--surface);stroke:var(--tone);stroke-width:2;stroke-opacity:.35;filter:drop-shadow(0 3px 6px rgba(40,20,40,.18));transition:stroke-opacity .15s,stroke-width .15s}
+.roll-node:hover .fd-halo,.roll-node:focus-visible .fd-halo{stroke-opacity:.8;stroke-width:3}
+.roll-node .fd-ring{fill:none;stroke:var(--tone);stroke-width:6}
+.roll-node .fd-groove{stroke:var(--tone);stroke-opacity:.35;stroke-width:1.3}
 .roll-node .fd-focus{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-dasharray:5 5;opacity:0}
 .roll-node:focus-visible .fd-focus{opacity:1}
-.roll-node .fd-hub{fill:var(--wash);stroke:var(--tone);stroke-width:2.5}
-.roll-node .fd-hub-text{font-family:var(--display);font-size:17px;font-weight:800;fill:var(--tone)}
+.roll-node .fd-hub{fill:var(--tone);stroke:#fff;stroke-width:2.5}
+.roll-node .fd-hub-text{font-family:var(--display);font-size:16px;font-weight:800;fill:#fff}
 .roll-node .fd-marker{fill:var(--tone)}
-.roll-node.unknown .fd-pill{fill:#2a2229d9}
-.fd-spin{animation:roll-spin 3.2s linear infinite}
-.fd-strip-flow{stroke:#ffffff;stroke-width:1.4;stroke-dasharray:2 26;opacity:.9;animation:strip-flow 1.1s linear infinite}
+.fd-spin{animation:roll-spin 4s linear infinite}
+.fd-strip-flow{stroke:#ffffff;stroke-width:1.2;stroke-dasharray:2 26;opacity:.8;animation:strip-flow 1.4s linear infinite}
 .fd-direction text{font-size:10px;font-weight:700;letter-spacing:.14em;fill:var(--text-3)}
 .fd-direction path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .motion-paused .fd-spin,.motion-paused .fd-strip-flow{animation-play-state:paused}
