@@ -23,9 +23,9 @@ Painel em React + TypeScript, **sem login e sem senha**, com identidade visual r
 
 O endereço principal (`/`) abre a página de apresentação do sistema, com o botão **Acessar painel** (sem login). O painel fica em `/#painel`.
 
-A página inicial traz o jogo **A Missão do Forno** (`/game/`), um jogo de plataforma em pixel art feito em HTML5 Canvas e Web Audio, sem dependências. O técnico Rolando pega a prancheta, inspeciona os 5 rolos num minijogo de leitura de desgaste, troca os rolos em prioridade com a ponte rolante, desvia de fagulhas e vapor, coleta EPI e registra tudo no terminal RB1 Roll. Personagem, gráficos e música são originais.
+A página inicial traz o jogo **A Missão do Forno** (`/game/`), um jogo de plataforma em pixel art feito em HTML5 Canvas e Web Audio, sem dependências. O jogador escolhe Rolando ou Rafaela (uniforme Aperam), participa do Diálogo de Segurança, veste o EPI (o portão bloqueia a área do forno sem EPI), inspeciona os 5 rolos num minijogo de leitura de desgaste, anota os dados na prancheta e troca os rolos em prioridade operando a ponte rolante por controle remoto: retira o rolo usado para o berço de resfriamento e instala o rolo novo do estoque. A área sob a carga suspensa é sinalizada; ficar sob a carga gera alarme e infração. O resultado final mostra nota, pontuação e índice de segurança. Personagens, gráficos e música são originais.
 
-Controles: ← → andar · ↑ ou espaço pular · E agir · C prancheta · P pausa · M som. No celular, botões na tela (melhor com o aparelho deitado).
+Controles: ← → andar · ↑ ou espaço pular · E agir · C prancheta · P pausa · M som. Ponte rolante: ← → mover · ↑ ↓ gancho · E engatar/soltar · Q sair. No celular, botões na tela (melhor com o aparelho deitado).
 
 ## Hospedagem estática (Vercel, por exemplo)
 

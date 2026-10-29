@@ -61,17 +61,17 @@ export function Landing({onEnter}:{onEnter:()=>void}){
    <div className="l-game-copy">
     <span className="l-pixel-tag">RB1 ROLL APRESENTA</span>
     <h2 className="l-pixel">A MISSÃO<br/>DO FORNO<i>.</i></h2>
-    <p>Um jogo de plataforma em pixel art para apresentar o sistema. Ajude o Rolando, técnico do RB1, a cumprir a ronda do turno:</p>
+    <p>Um jogo de plataforma em pixel art para apresentar o sistema. Escolha Rolando ou Rafaela, com o uniforme Aperam, e cumpra a ronda do turno com segurança:</p>
     <ul className="l-game-list">
-     <li><ClipboardList size={16}/>Pegue a prancheta e inspecione os 5 rolos</li>
-     <li><BarChart3 size={16}/>Acerte a leitura de desgaste no minijogo de inspeção</li>
-     <li><ArrowUpRight size={16}/>Troque os rolos em prioridade com a ponte rolante</li>
-     <li><ShieldCheck size={16}/>Desvie das fagulhas e do vapor, colete EPI</li>
+     <li><ShieldCheck size={16}/>Vista o EPI completo: sem EPI, sem acesso ao forno</li>
+     <li><ClipboardList size={16}/>Inspecione os 5 rolos e anote tudo na prancheta</li>
+     <li><ArrowUpRight size={16}/>Troque os rolos operando a ponte rolante por controle remoto</li>
+     <li><BarChart3 size={16}/>Nunca fique sob carga suspensa: segurança vem primeiro</li>
     </ul>
     <div className="l-ctas"><button className="accent l-big" onClick={()=>setPlaying(true)}><Play size={18}/>Iniciar jogo</button><a className="l-link light" href="/game/" target="_blank" rel="noopener">Abrir em nova aba<ArrowUpRight size={15}/></a></div>
-    <small className="l-keys">Teclado: ← → andar · ↑ ou espaço pular · E agir · C prancheta · P pausa. No celular, use os botões na tela.</small>
+    <small className="l-keys">Teclado: ← → andar · ↑ pular · E agir · C prancheta · P pausa. Ponte: ← → mover · ↑ ↓ gancho · E engatar · Q sair. No celular, use os botões na tela.</small>
    </div>
-   <button className="l-game-poster" onClick={()=>setPlaying(true)} aria-label="Iniciar jogo"><img src="/game/preview.png" alt="Cena do jogo: o técnico em frente ao forno de recozimento, com a prancheta de inspeção" loading="lazy"/><span className="l-play"><Play size={26}/></span></button>
+   <button className="l-game-poster" onClick={()=>setPlaying(true)} aria-label="Iniciar jogo"><img src="/game/preview.png" alt="Cena do jogo: operação da ponte rolante por controle remoto em frente ao forno de recozimento" loading="lazy"/><span className="l-play"><Play size={26}/></span></button>
   </section>
 
   <footer className="l-footer"><span>RB1 Roll · Condição dos rolos</span><button className="text-link" onClick={onEnter}>Acessar painel →</button></footer>
