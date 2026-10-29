@@ -30,9 +30,9 @@ function change(path:string,b:Record<string,unknown>){
    if(path==='replacements'){
     if(r.version!==b.version)throw new Error('Rolo atualizado por outro registro. Atualize a tela.');
     if(r.installed&&dt<=new Date(r.installed))throw new Error('A troca deve ser posterior à última instalação.');
-    const serial=text(b,'serial',100),reason=text(b,'reason',200),diameter=b.diameter===null?null:Number(b.diameter);
+    const serial=String(b.serial||'').trim().slice(0,100),reason=text(b,'reason',200),diameter=b.diameter===null?null:Number(b.diameter);
     if(diameter!==null&&(!Number.isFinite(diameter)||diameter<=0||diameter>=10000))throw new Error('Diâmetro inválido.');
-    s.events.unshift({id,roll_id:r.id,operator,shift,occurred,reason,serial,old_serial:r.serial,diameter,notes});Object.assign(r,{serial,diameter,installed:occurred,version:r.version+1});
+    s.events.unshift({id,roll_id:r.id,operator,shift,occurred,reason,serial,old_serial:r.serial,diameter,notes});Object.assign(r,{serial:serial||null,diameter,installed:occurred,version:r.version+1});
    }else if(path==='inspections'){
     const answers=b.checks as Record<string,string>;
     if(!answers||Object.keys(answers).length!==checks.length||checks.some(k=>!['ok','issue','na'].includes(answers[k])))throw new Error('Responda todos os itens do checklist.');

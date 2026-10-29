@@ -20,3 +20,8 @@ test('static hosting: direct view, swap, checklist, kanban and persistent histor
  await assert.rejects(()=>api('tasks',{roll_id:0,title:'Sem nome'}));
  assert.equal(JSON.parse(memory.get('ccq.local.v1')).events.length,1);
 });
+test('replacement without roll identification',async()=>{
+ const s=await api('state');const occurred=new Date(Date.now()-30000).toISOString();
+ await api('replacements',{roll_id:1,operator:'Abner',version:s.rolls[1].version,occurred,diameter:640,reason:'Troca preventiva'});
+ const after=await api('state');assert.equal(after.events[0].serial,'');assert.equal(after.rolls[1].serial,null);assert.equal(after.rolls[1].diameter,640);
+});

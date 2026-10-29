@@ -65,13 +65,13 @@ def mutate(path, data, operator):
             dt = occurred(data)
             if data.get('version') != roll['version']: raise ValueError('Este rolo foi atualizado. Recarregue antes de registrar.')
             if roll['installed'] and dt <= datetime.fromisoformat(roll['installed']): raise ValueError('A troca deve ser posterior à última instalação.')
-            serial = required(data,'serial',100)
+            serial = str(data.get('serial') or '').strip()[:100]  # identificação opcional
             reason = required(data,'reason',200)
             diameter = data.get('diameter')
             if diameter is not None and (not isinstance(diameter,(int,float)) or not math.isfinite(diameter) or not 0 < diameter < 10000): raise ValueError('Diâmetro inválido.')
             notes = str(data.get('notes',''))[:2000]
             db.execute('INSERT INTO events VALUES(?,?,?,?,?,?,?,?,?,?,?)',(secrets.token_hex(12),roll['id'],operator,shift(dt),dt.isoformat(),now(),reason,serial,roll['serial'],diameter,notes))
-            db.execute('UPDATE rolls SET installed=?,serial=?,diameter=?,version=version+1 WHERE id=?',(dt.isoformat(),serial,diameter,roll['id']))
+            db.execute('UPDATE rolls SET installed=?,serial=?,diameter=?,version=version+1 WHERE id=?',(dt.isoformat(),serial or None,diameter,roll['id']))
         elif path == '/api/inspections':
             dt = occurred(data)
             checks = data.get('checks',{})

@@ -27,6 +27,11 @@ class TestCCQ(unittest.TestCase):
             self.assertEqual(db.execute('SELECT count(*) FROM events').fetchone()[0],2)
             row=db.execute("SELECT * FROM events WHERE serial='RF-002'").fetchone()
             self.assertEqual(row['old_serial'],'RF-001')
+    def test_replacement_without_serial(self):
+        data=self.replacement();del data['serial'];app.mutate('/api/replacements',data,'Abner')
+        with app.connect() as db:
+            self.assertEqual(db.execute('SELECT serial FROM events').fetchone()[0],'')
+            self.assertIsNone(db.execute('SELECT serial FROM rolls WHERE id=0').fetchone()[0])
     def test_future_rejected(self):
         data=self.replacement();data['occurred']=(datetime.now(app.TZ)+timedelta(days=1)).isoformat()
         with self.assertRaises(ValueError):app.mutate('/api/replacements',data,'Abner')

@@ -91,12 +91,22 @@ nav button.active .nav-index{color:#a78bfa}
 .command-button svg{color:#8b8b93}
 .command-button:hover{background:#121214;border-color:#3a3a40}
 .command-button kbd{margin-left:auto;background:transparent;border-color:#2e2e33;color:#77777f}
-.aside-legend{margin:22px 20px 0;display:grid;gap:9px}
-.aside-label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:#5f5f67;margin-bottom:3px}
-.aside-legend div{display:flex;align-items:center;gap:9px;font-size:12.5px;color:#c4c4ca}
-.aside-legend i{width:7px;height:7px;border-radius:50%;background:var(--tone)}
-.aside-legend b{margin-left:auto;font-weight:500;color:#77777f;font-size:12px}
-aside .green{--tone:#4ade80}aside .yellow{--tone:#facc15}aside .red{--tone:#f87171}
+.quick{margin:20px 10px 12px;display:grid;gap:4px}
+.quick-head{display:flex;align-items:center;justify-content:space-between;padding:0 8px 6px}
+.aside-label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:#6b6b74;white-space:nowrap}
+.quick-legend{display:inline-flex;align-items:center;gap:4px}
+.quick-legend i{width:6px;height:6px;border-radius:50%;background:var(--tone)}
+.quick-item{display:flex;align-items:flex-start;gap:11px;width:100%;padding:9px 8px;border-radius:10px;text-align:left;border:1px solid transparent}
+.quick-item:hover{background:#121214;border-color:#1f1f23}
+.quick-pos{width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--tone);border:2px solid var(--tone);background:color-mix(in srgb,var(--tone) 12%,#0a0a0a)}
+.quick-body{flex:1;min-width:0;display:grid;gap:2px}
+.quick-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.quick-top b{font-size:13px;font-weight:600;color:#f4f4f5}
+.quick-top em{font-style:normal;font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--tone)}
+.quick-item.unknown .quick-top em{color:#6b6b74}
+.quick-dim{font-family:var(--mono);font-size:10.5px;color:#9a9aa2}
+.quick-note{font-size:11px;color:#6f6f78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+aside .green{--tone:#4ade80}aside .yellow{--tone:#facc15}aside .red{--tone:#f87171}aside .unknown{--tone:#8a8a93}
 .aside-foot{margin-top:auto}
 .storage-line{display:flex;align-items:center;gap:8px;padding:14px 20px;font-size:12px;color:#8b8b93;border-top:1px solid #1c1c1f}
 .storage-line svg{color:#a78bfa;flex:none}
@@ -380,7 +390,7 @@ tbody tr:hover td{background:var(--surface-2)}
  nav::-webkit-scrollbar{display:none}
  nav button{height:36px;flex:none}
  nav button.active:before{left:12px;right:12px;top:auto;bottom:-1px;width:auto;height:2px;border-radius:2px}
- .nav-index,.nav-dot,.command-button,.aside-legend,.aside-foot{display:none}
+ .nav-index,.nav-dot,.command-button,.quick,.aside-foot{display:none}
  .topbar{position:static;padding:0 16px;height:54px}
  .search-button{width:38px;padding:0;justify-content:center}
  .search-button span,.search-button kbd{display:none}
