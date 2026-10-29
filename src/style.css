@@ -193,7 +193,6 @@ footer{display:flex;justify-content:space-between;gap:16px;padding:18px 28px;bor
 .fd-label.muted{fill:var(--text-3)}
 .fd-burner{fill:var(--text-3)}
 .fd-slot{fill:var(--surface-2);stroke:var(--border-strong);stroke-width:1}
-.fd-stand{fill:none;stroke:var(--border-strong);stroke-width:1.5;stroke-linejoin:round}
 .fd-pos{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.12em;fill:var(--text-2)}
 .roll-node{cursor:pointer;outline:none}
 .roll-node .fd-hit{fill:transparent}
@@ -213,13 +212,15 @@ footer{display:flex;justify-content:space-between;gap:16px;padding:18px 28px;bor
 @keyframes roll-spin{to{transform:rotate(360deg)}}
 @keyframes strip-flow{to{stroke-dashoffset:-24}}
 @media(prefers-reduced-motion:reduce){.fd-spin,.fd-strip-flow{animation:none!important}}
-.furnace-captions{position:relative;height:82px}
-.roll-caption{position:absolute;top:0;transform:translateX(-50%);width:16%;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 6px;border-radius:10px;text-align:center}
+.furnace-captions{position:relative;height:104px}
+.roll-caption{position:absolute;top:4px;transform:translateX(-50%);width:17%;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;border-radius:12px;text-align:center}
 .roll-caption:hover{background:var(--surface)}
-.roll-caption strong{font-family:var(--display);font-size:14px;font-weight:700;color:var(--text)}
-.roll-caption b{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text-2)}
-.roll-caption b i{width:6px;height:6px;border-radius:50%;background:var(--tone)}
-.roll-caption em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--text-3)}
+.roll-caption strong{font-family:var(--display);font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+.roll-caption b{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 11px;border-radius:99px;font-size:13px;font-weight:700;color:color-mix(in srgb,var(--tone) 80%,var(--text));background:color-mix(in srgb,var(--tone) 13%,var(--surface));border:1px solid color-mix(in srgb,var(--tone) 28%,transparent);white-space:nowrap}
+.roll-caption.unknown b{color:var(--text-2)}
+.roll-caption b i{width:7px;height:7px;border-radius:50%;background:var(--tone)}
+.roll-caption em{display:inline-flex;gap:6px;font-style:normal;font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text-2);white-space:nowrap}
+.roll-caption em span{color:var(--text-3)}
 
 /* Roll cards */
 .roll-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}

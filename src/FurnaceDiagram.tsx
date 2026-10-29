@@ -1,7 +1,7 @@
 import type {KeyboardEvent} from 'react';
 import {FurnaceFire} from './FurnaceFire';
 
-type DiagramRoll={id:number;name:string;days:number|null;diameter:number|null;status:string};
+type DiagramRoll={id:number;name:string;serial:string|null;days:number|null;diameter:number|null;status:string};
 
 // Schematic side view. Everything shares one viewBox, so the strip always rests on top of the rolls,
 // and the flames live in a separate heating band below them so they never cover a roll.
@@ -31,9 +31,6 @@ export function FurnaceDiagram({rolls,animated,onSelect}:{rolls:DiagramRoll[];an
     {/* Strip openings in the furnace walls */}
     {[FURNACE.x,FURNACE.x+FURNACE.w].map(x=><rect key={x} x={x-3} y={STRIP_Y-6} width="6" height={STRIP_W+12} className="fd-slot"/>)}
 
-    {/* External roll stand */}
-    <path d={`M${rollX(0)-24} ${FLOOR}L${rollX(0)} ${CY}L${rollX(0)+24} ${FLOOR}`} className="fd-stand"/>
-
     {rolls.map(r=>{const x=rollX(r.id);return <g key={r.id} className={'roll-node '+r.status} role="button" tabIndex={0} aria-label={`${r.name}: ${r.days===null?'sem data de troca':r.days+' dias em uso'}. Abrir detalhes`} onClick={()=>onSelect(r.id)} onKeyDown={key(r.id)}>
      <text x={x} y={STRIP_Y-18} textAnchor="middle" className="fd-pos">{r.id===0?'EXTERNO':'POS. '+r.id}</text>
      <circle cx={x} cy={CY} r={R+9} className="fd-hit"/>
@@ -53,8 +50,8 @@ export function FurnaceDiagram({rolls,animated,onSelect}:{rolls:DiagramRoll[];an
   <div className="furnace-captions">
    {rolls.map(r=><button key={r.id} className={'roll-caption '+r.status} style={{left:pct(rollX(r.id),W)}} onClick={()=>onSelect(r.id)} tabIndex={-1}>
     <strong>{r.name}</strong>
-    <b><i/>{r.days===null?'Sem data de troca':r.days+(r.days===1?' dia':' dias')+' em uso'}</b>
-    <em>{r.diameter?'Ø '+r.diameter+' mm':'Ø não informado'}</em>
+    <b><i/>{r.days===null?'Sem registro':r.days+(r.days===1?' dia':' dias')+' em uso'}</b>
+    <em>{r.serial||'Sem ID'}<span>·</span>{r.diameter?'Ø '+r.diameter+' mm':'Ø —'}</em>
    </button>)}
   </div>
  </div></div>;
