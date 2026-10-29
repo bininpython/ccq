@@ -163,6 +163,7 @@ export async function exportExcel(events:ExportEvent[],meta:ExportMeta){
   const x=cs.addRow([r.name,r.location,statusLabel[r.status]||r.status,r.days??'—',r.serial||'—',r.diameter??'—',r.installed?localDate(r.installed):'—']);
   x.getCell(3).font={...font,bold:true,color:{argb:'FF'+(statusColor[r.status]||C.ink)}};
   x.getCell(7).numFmt='dd/mm/yyyy hh:mm';
+  for(const c of [4,6,7])x.getCell(c).alignment={horizontal:'center'};
   body(x,i);
   x.getCell(3).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+(statusTint[r.status]||statusTint.unknown)}};
  });
