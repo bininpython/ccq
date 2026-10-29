@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {ArrowRight,ArrowUpRight,BarChart3,ClipboardList,Clock3,FileSpreadsheet,Gamepad2,LayoutDashboard,Play,ShieldCheck,X} from 'lucide-react';
+import {ArrowRight,ArrowUpRight,BarChart3,ClipboardList,Clock3,FileSpreadsheet,Gamepad2,LayoutDashboard,Play,ShieldCheck,X,Zap} from 'lucide-react';
 import {FurnaceDiagram} from './FurnaceDiagram';
 import {Logo} from './Logo';
 
@@ -61,9 +61,10 @@ export function Landing({onEnter}:{onEnter:()=>void}){
    <div className="l-game-copy">
     <span className="l-pixel-tag">RB1 ROLL APRESENTA</span>
     <h2 className="l-pixel">A MISSÃO<br/>DO FORNO<i>.</i></h2>
-    <p>Um jogo de plataforma em pixel art para apresentar o sistema. Escolha Rolando ou Rafaela, com o uniforme Aperam, e cumpra a ronda do turno com segurança:</p>
+    <p>Um jogo de plataforma em pixel art para apresentar o sistema. Escolha um dos 8 personagens da equipe, com o uniforme Aperam, e cumpra a ronda do turno com segurança. Com os eletricistas Rodrigo e Edgar, a planta começa sem energia:</p>
     <ul className="l-game-list">
      <li><ShieldCheck size={16}/>Vista o EPI completo: sem EPI, sem acesso ao forno</li>
+     <li><Zap size={16}/>Eletricistas: religue o disjuntor geral seguindo a NR-10</li>
      <li><ClipboardList size={16}/>Inspecione os 5 rolos e anote tudo na prancheta</li>
      <li><ArrowUpRight size={16}/>Troque os rolos operando a ponte rolante por controle remoto</li>
      <li><BarChart3 size={16}/>Nunca fique sob carga suspensa: segurança vem primeiro</li>

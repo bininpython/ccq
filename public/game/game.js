@@ -123,7 +123,7 @@ function toggleMute(){AU.muted=!AU.muted;store.set('rb1game.muted',AU.muted);if(
 
 // ───────────────────────── Sprites ─────────────────────────
 // Uniforme Aperam: camisa cinza de manga longa com friso laranja no bolso e crachá branco, calça escura e botina.
-const PAL={Q:'#7a4a32',q:'#5a3424',O:'#f1511b',o:'#b33a0f',h:'#ff9466',H:'#2b1d16',S:'#e8b48f',s:'#c48b66',K:'#1b1a22',G:'#bfe9ff',C:'#d3d6de',c:'#9aa0ae',W:'#ffffff',L:'#d9a441',D:'#2f3442',d:'#1e2129',B:'#141418',b:'#2a2a30'};
+const PAL={O:'#f1511b',o:'#b33a0f',h:'#ff9466',H:'#2b1d16',S:'#e8b48f',s:'#c48b66',K:'#1b1a22',G:'#bfe9ff',C:'#d3d6de',c:'#9aa0ae',W:'#ffffff',L:'#d9a441',D:'#2f3442',d:'#1e2129',B:'#141418',b:'#2a2a30'};
 function sprite(rows,pal=PAL){
  const h=rows.length,w=Math.max(...rows.map(r=>r.length));
  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');
@@ -138,28 +138,42 @@ const LEGS={
  walkB:['....DDDd....','....DDDd....','....BBBb....','...BBBBb....'],
  jump:['..DDd..DDd..','.DDd....DDd.','.BBb....BBb.','............'],
 };
-// style 'a' = Rolando (cabelo curto), 'b' = Rafaela (cabelo longo). epi = capacete, óculos e luvas.
-function heroRows(style,epi,legs){
- const long=style==='b',side=long?'H':'.';
- const top=epi?['....hhOO....','...hOOOOOo..','..oOOOOOOOo.','..oooooooOOO']
-  :long?['....HHHH....','...HHHHHH...','..HHHHHHHH..','..HHHHHHHH..']:['............','....HHHH....','...HHHHHH...','..HHHHHHHH..'];
+// Equipe jogável. Os eletricistas (Rodrigo e Edgar) usam capacete azul e luvas isolantes e começam o turno
+// religando o disjuntor geral, porque a planta está sem energia.
+const CREW=[
+ {id:'davi',name:'Davi',role:'tech',hair:'#2b1d16',skin:'#e0a982',shade:'#b97f5b',style:'short'},
+ {id:'rodrigo',name:'Rodrigo',role:'elec',hair:'#1f1612',skin:'#c98d63',shade:'#9f6b47',style:'short',face:'beard'},
+ {id:'rafael',name:'Rafael',role:'tech',hair:'#141014',skin:'#9c6a46',shade:'#7a4f32',style:'curly'},
+ {id:'savio',name:'Sávio',role:'tech',hair:'#3a2a1e',skin:'#f0c4a0',shade:'#cf9a74',style:'buzz'},
+ {id:'william',name:'William',role:'tech',hair:'#8a5a32',skin:'#f3cba9',shade:'#d19f7b',style:'swept'},
+ {id:'tales',name:'Tales Jacob',role:'tech',hair:'#1b1410',skin:'#8a5a3c',shade:'#6a422a',style:'buzz',face:'beard'},
+ {id:'abner',name:'Abner',role:'tech',hair:'#120e10',skin:'#d39a70',shade:'#a8724e',style:'swept'},
+ {id:'edgar',name:'Edgar',role:'elec',hair:'#8d8a92',skin:'#eab892',shade:'#c48b66',style:'short',face:'mustache'},
+];
+const crewById=id=>CREW.find(c=>c.id===id)||CREW[0];
+const HAIR={
+ short:['............','....HHHH....','...HHHHHH...','..HHHHHHHH..'],
+ buzz:['............','............','...HHHHHH...','..HHHHHHHH..'],
+ curly:['...H.HH.H...','..HHHHHHHH..','.HHHHHHHHHH.','.HHHHHHHHHH.'],
+ swept:['.....HHHH...','...HHHHHHH..','..HHHHHHHHH.','..HHHHHHHH..'],
+};
+// epi = capacete, óculos e luvas (isolantes para eletricistas).
+function heroRows(m,epi,legs){
+ const top=epi?['....hhOO....','...hOOOOOo..','..oOOOOOOOo.','..oooooooOOO']:HAIR[m.style];
+ const side=!epi&&m.style==='curly'?'H':'.';
  const eye=epi?'SGGSGG':'SKSSKS',hand=epi?'L':'S';
- // Rafaela: ponytail falling behind the shoulders (visible with or without the helmet).
- return[...top,
-  `..${side}SSSSSSS..`,
-  `..${side}${eye}s..`,
-  `..${side}SSSSSSs..`,
-  long?'..HHSSsss...':'....SSsss...',
-  long?'..HcCCCCCc..':'..cCCCCCCc..',
-  `.${hand}cCWOOCCc${hand}.`,
-  `.${hand}cCCCCCCc${hand}.`,
-  '..dDDDDDDd..',
-  ...legs].map((row,y)=>{if(!long)return row;const a=[...row];if(y>=3&&y<=8)a[1]='Q';if(y>=5&&y<=11)a[0]=y===11?'q':'Q';return a.join('')});
+ const mouth=m.face==='beard'?'...HSSSSHH..':m.face==='mustache'?'...SSHHHSs..':'...SSSSSSs..';
+ const chin=m.face==='beard'?'....HHHHH...':'....SSsss...';
+ return[...top,`..${side}SSSSSSS..`,`..${side}${eye}s..`,mouth,chin,'..cCCCCCCc..',`.${hand}cCWOOCCc${hand}.`,`.${hand}cCCCCCCc${hand}.`,'..dDDDDDDd..',...legs];
+}
+function crewPal(m){
+ const elec=m.role==='elec';
+ return{...PAL,H:m.hair,S:m.skin,s:m.shade,...(elec?{O:'#2563eb',o:'#1e3a8a',h:'#60a5fa',L:'#facc15'}:{})};
 }
 const HERO={};
-for(const style of ['a','b'])for(const epi of [0,1])for(const [k,legs] of Object.entries(LEGS)){
- const c=sprite(heroRows(style,epi,legs));
- HERO[style+epi+k]={r:c,l:flip(c),fr:flash(c),fl:flash(flip(c))};
+for(const m of CREW)for(const epi of [0,1])for(const [k,legs] of Object.entries(LEGS)){
+ const c=sprite(heroRows(m,epi,legs),crewPal(m));
+ HERO[m.id+epi+k]={r:c,l:flip(c),fr:flash(c),fl:flash(flip(c))};
 }
 const CLIP=sprite(['...kKKk...','.bBkKKkBb.','.bWWWWWWb.','.bWLLLLWb.','.bWWWWWWb.','.bWLLLWWb.','.bWWWWWWb.','.bWLLRLWb.','.bWWWWWWb.','.bbbbbbbb.'],{B:'#8a5a2b',b:'#5e3b1a',K:'#c3c8d0',k:'#6b7280',W:'#f4f1e6',L:'#9aa6c8',R:'#e0473b'});
 const HELMET=sprite(['...hOOO...','..hOOOOO..','.OOOOOOOO.','.OOOYYOOO.','oooooooooo'],{...PAL,Y:'#ffd23f'});
@@ -194,7 +208,7 @@ function drawRoll(g,cx,cy,variant,ang){
 const ROLL_X=[430,760,980,1200,1420],ROLL_Y=118,STRIP_Y=ROLL_Y-R-2;
 const FURN={x:600,y:56,w:1120,h:FLOOR-56},WIN={x:616,y:82,w:1088,h:104};
 const PILLARS=[870,1090,1310,1530];
-const LOCKER={x:34,w:30},TABLE={x:92,w:58,y:168},GATE_X=394,REMOTE_POST=490,RACK={x:500,w:88},TERM={x:1752,w:48};
+const PANEL={x:226,w:30},LOCKER={x:34,w:30},TABLE={x:92,w:58,y:168},GATE_X=394,REMOTE_POST=490,RACK={x:500,w:88},TERM={x:1752,w:48};
 const RACK_SLOTS=[520,546],RACK_Y=135;
 const CRADLE_SLOTS=[640,668],CRADLE_Y=FLOOR-R-1;
 const PLATFORMS=[{x:150,y:160,w:52},{x:296,y:160,w:52},{x:842,y:160,w:56},{x:1062,y:160,w:56},{x:1282,y:160,w:56},{x:1502,y:160,w:56}];
@@ -254,6 +268,12 @@ function signCircle(g,x,y,color){g.fillStyle='#ffffff';g.beginPath();g.arc(x,y,8
  // Warning signs: suspended load near the rack, general danger at the furnace entry.
  signTriangle(g,RACK.x+36,100);rect(g,'#1b1a22',RACK.x+42,104,2,2);rect(g,'#1b1a22',RACK.x+40,106,6,4);
  signTriangle(g,590,128);rect(g,'#1b1a22',596,132,2,5);rect(g,'#1b1a22',596,138,2,1);
+ // Main electrical panel (quadro do disjuntor geral) with conduit to the ceiling.
+ rect(g,'#3a3446',PANEL.x+13,16,4,112);rect(g,'#4f4860',PANEL.x+13,16,1,112);
+ rect(g,'#53606e',PANEL.x,128,PANEL.w,42);rect(g,'#6b7a8a',PANEL.x,128,PANEL.w,2);rect(g,'#3b4652',PANEL.x+2,132,PANEL.w-4,36);
+ rect(g,'#2a323b',PANEL.x+PANEL.w/2,132,1,36);rect(g,'#9aa0ae',PANEL.x+PANEL.w/2-3,148,2,5);rect(g,'#9aa0ae',PANEL.x+PANEL.w/2+2,148,2,5);
+ signTriangle(g,PANEL.x+8,110);rect(g,'#1b1a22',PANEL.x+15,113,2,3);rect(g,'#1b1a22',PANEL.x+13,116,4,2);rect(g,'#1b1a22',PANEL.x+13,118,2,3);
+ rect(g,'#2a2534',PANEL.x+4,170,PANEL.w-8,FLOOR-170);
  // Remote control post.
  rect(g,'#57526a',REMOTE_POST-1,140,3,FLOOR-140);rect(g,'#2a2534',REMOTE_POST-4,FLOOR-3,9,3);rect(g,'#f2c230',REMOTE_POST-4,138,9,3);
  // Roll rack (stock).
@@ -291,17 +311,26 @@ function signCircle(g,x,y,color){g.fillStyle='#ffffff';g.beginPath();g.arc(x,y,8
  for(let x=0;x<WORLD;x+=10)rect(g,'#16a34a',x,FLOOR+7,6,1);
 })();
 
+// Darkness overlay used while the plant has no power (electricians' shift start).
+const LM=document.createElement('canvas');LM.width=VW;LM.height=VH;const lm=LM.getContext('2d');
+const EMERG=[120,520,900,1300,1700];
+function lightLevel(){
+ if(!power)return 0;
+ if(lightT===0||lightT>=90)return 1;
+ if(lightT<50)return [1,0,0,1,1,0,1,0,0,0,1,1,0,1][(lightT>>2)%14]?.8:.08;
+ return .8+(lightT-50)/40*.2;
+}
+
 // ───────────────────────── Game state ─────────────────────────
 const TIPS=['Use sempre o EPI completo: capacete, óculos, luvas e botina.','Nunca fique sob carga suspensa. Mantenha distância da rota da ponte.','Respeite o isolamento das áreas quentes do forno.','Viu uma condição insegura? Pare e comunique. Você tem o direito de recusa.','Sua família espera você em casa. Trabalhe com segurança.','Antes de operar a ponte, confira o gancho, a trava e as cintas.','Caminhe pela faixa verde de pedestres sempre que possível.'];
-let state='title',paused='play',frame=0,camX=0,shake=0,best=store.get('rb1game.best',0),hero=store.get('rb1game.hero','a');
-if(hero!=='a'&&hero!=='b')hero='a';
-let P,rolls,blocks,coins,items,parts,embers,toasts,log,crane,stats,inspect,boardOpen,boardTimer,doneData,emberTimer,cradle,tipTimer,tipIndex,danger;
+let state='title',paused='play',frame=0,camX=0,shake=0,best=store.get('rb1game.best',0),hero=crewById(store.get('rb1game.hero','davi')).id;
+let power=1,lightT=0,breaker=null,P,rolls,blocks,coins,items,parts,embers,toasts,log,crane,stats,inspect,boardOpen,boardTimer,doneData,emberTimer,cradle,tipTimer,tipIndex,danger;
 const SHIFT=()=>{const h=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',hourCycle:'h23'}).format(new Date()));return h>=23||h<7?'TN':h<15?'TM':'TT'};
 const nowHM=()=>new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const statusOf=d=>d<=5?'green':d<=10?'yellow':'red';
 const STATUS={green:['EM DIA','#22c55e'],yellow:['ATENÇÃO','#facc15'],red:['PRIORIDADE','#ef4444']};
 const fmt=v=>v.toLocaleString('pt-BR');
-const heroName=()=>hero==='b'?'Rafaela':'Rolando';
+const me=()=>crewById(hero),heroName=()=>me().name,isElec=()=>me().role==='elec';
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 
 function reset(){
@@ -316,6 +345,8 @@ function reset(){
  stats={score:0,time:0,coins:0,epi:0,inspections:0,precise:0,swaps:0,hits:0,violations:0,aligned:0};
  inspect=null;boardOpen=false;boardTimer=0;doneData=null;emberTimer=120;tipTimer=900;tipIndex=0;danger=0;
  for(const k in pressed)pressed[k]=0;
+ // Electricians start the shift with the plant de-energized.
+ power=isElec()?0:1;lightT=0;breaker=null;
 }
 const ventPhase=i=>(frame+i*67)%260;
 reset();
@@ -326,13 +357,14 @@ function addScore(v,x,y){stats.score=Math.max(0,stats.score+v);if(x!==undefined)
 function writeLog(title,line,color){log.push({title,line,color,shown:0});boardTimer=260;AU.sfx('write')}
 
 function beginShift(){reset();state='brief';AU.init();AU.sfx('select')}
-function startPlay(){state='play';AU.startMusic();toast('Vista o EPI no armário antes de entrar na área','#60a5fa',260)}
+function startPlay(){state='play';AU.startMusic();toast(isElec()?'Queda de energia! Vista o EPI e religue o disjuntor geral.':'Vista o EPI no armário antes de entrar na área',isElec()?'#facc15':'#60a5fa',260)}
 
 // ───────────────────────── Objective & interactions ─────────────────────────
 const pending=()=>rolls.find(r=>r.inspected&&r.status==='red'&&!r.replaced);
 function objective(){
  const ins=rolls.filter(r=>r.inspected).length,p=pending(),empty=rolls.find(r=>r.removed);
- if(!P.epi)return'Vista o EPI completo no armário';
+ if(!P.epi)return isElec()?'Vista o EPI com luvas isolantes no armário':'Vista o EPI completo no armário';
+ if(!power)return'Religue o disjuntor geral no quadro elétrico ⚡';
  if(!P.board)return'Pegue a prancheta na bancada';
  if(p){
   if(!P.remote)return'Pegue o controle remoto da ponte rolante';
@@ -348,6 +380,11 @@ function objective(){
 function nearby(){
  const cx=P.x+P.w/2;
  if(!P.epi&&cx>LOCKER.x-6&&cx<LOCKER.x+LOCKER.w+6)return{label:'Vestir EPI',fn:()=>{P.epi=true;stats.epi++;AU.sfx('gear');burst(P.x+5,P.y+4,['#f1511b','#bfe9ff','#d9a441'],16,1.4);toast('EPI completo: capacete, óculos, luvas e botina. Agora sim!','#60a5fa',220)}};
+ if(Math.abs(cx-(PANEL.x+PANEL.w/2))<14){
+  if(power)return{label:'Quadro elétrico energizado',fn:()=>{toast(isElec()?'Quadro ligado. Mantenha a porta fechada.':'Quadro elétrico: acesso somente para eletricistas autorizados (NR-10).','#facc15');AU.sfx('select')}};
+  if(!P.epi)return{label:'Quadro elétrico',fn:()=>{toast('Nunca abra o quadro sem EPI e luvas isolantes!','#ef4444');AU.sfx('bad')}};
+  return{label:'Religar disjuntor geral',fn:openBreaker};
+ }
  if(!P.board&&Math.abs(cx-(TABLE.x+24))<20)return{label:'Pegar prancheta',fn:()=>{P.board=true;AU.sfx('power');toast('Prancheta na mão! Inspecione os 5 rolos.','#ffd23f');writeLog(`TURNO ${SHIFT()} · ${heroName().toUpperCase()}`,`Início da ronda · ${nowHM()} · EPI ok`,'#7c3aed')}};
  if(!P.remote&&P.board&&Math.abs(cx-REMOTE_POST)<12)return{label:'Pegar controle remoto',fn:()=>{if(!pending()){toast('A ponte só é usada quando houver rolo em prioridade.','#e4e4e7');AU.sfx('bad');return}P.remote=true;AU.sfx('power');toast('Controle remoto da ponte na mão. Confira o gancho e a trava!','#facc15',220)}};
  for(const r of rolls){
@@ -359,6 +396,7 @@ function nearby(){
   if(r.status==='red'&&!r.replaced)return{label:'Rolo em prioridade',fn:()=>{toast('Pegue o controle remoto da ponte, ao lado do estoque','#ef4444');AU.sfx('bad')}};
   return{label:`Rolo ${r.i} · ${r.days} dias`,fn:()=>{toast(`Rolo ${r.i}: ${STATUS[r.status][0].toLowerCase()} · ${r.days} dias`,STATUS[r.status][1]);AU.sfx('select')}};
  }
+ if(cx>TERM.x-6&&!power)return{label:'Terminal sem energia',fn:()=>{toast('Sem energia: religue o disjuntor geral primeiro.','#facc15');AU.sfx('bad')}};
  if(cx>TERM.x-6){
   const done=rolls.every(r=>r.inspected&&(r.status!=='red'||r.replaced));
   return{label:done?'Registrar no RB1 Roll':'Terminal RB1 Roll',fn:()=>{if(!done){toast('Conclua as inspeções e as trocas antes','#e4e4e7');AU.sfx('bad');return}finish()}};
@@ -389,8 +427,24 @@ function updateInspect(){
  }
 }
 
+// ───────────────────────── Main breaker (electricians) ─────────────────────────
+// Energização segura em três passos: EPI isolante conferido, área avisada, disjuntor ligado.
+function openBreaker(){state='breaker';breaker={step:1,t:0,lever:0};AU.sfx('select')}
+function updateBreaker(){
+ const k=breaker;k.t++;
+ if(k.step===3){k.lever=Math.min(1,k.lever+.08);if(k.t>70){state='play';breaker=null;power=1;lightT=1;AU.sfx('power');addScore(200,P.x+5,P.y-10);
+  writeLog('ENERGIA RESTABELECIDA',`Disjuntor geral ligado por ${heroName()} · ${nowHM()}`,'#facc15');
+  toast('Energia restabelecida com segurança! Agora pegue a prancheta.','#facc15',240)}return}
+ if(take('exit')||take('pause')){state='play';breaker=null;return}
+ if(take('act')||take('jump')){
+  if(k.step===1){k.step=2;k.t=0;for(let i=0;i<3;i++)setTimeout(()=>AU.sfx('alarm'),i*320);toast('Atenção, área: energização do quadro geral!','#facc15',160)}
+  else if(k.step===2){k.step=3;k.t=0;AU.sfx('clank');shake=4}
+ }
+}
+
 // ───────────────────────── Remote-controlled overhead crane ─────────────────────────
 function enterCrane(){
+ if(!power){toast('Sem energia: a ponte rolante não funciona. Religue o disjuntor geral.','#facc15');AU.sfx('bad');return}
  state='crane';P.vx=0;AU.sfx('beep');for(const k of ['jump','down','act','exit'])pressed[k]=0;
  toast('Ponte ativa · ← → move · ↑ ↓ gancho · E engata/solta · Q sai','#facc15',240);
 }
@@ -558,8 +612,9 @@ function hitBlock(k){
 }
 function updateCommon(){
  frame++;
- if(state!=='crane'){crane.x+=(crane.target-crane.x)*.02;crane.swing*=.95;if(state==='play'&&frame%400===0&&!crane.load&&!P.remote)crane.target=CRANE_MIN+Math.random()*(CRANE_MAX-CRANE_MIN)}
+ if(state!=='crane'){crane.x+=(crane.target-crane.x)*.02;crane.swing*=.95;if(state==='play'&&power&&frame%400===0&&!crane.load&&!P.remote)crane.target=CRANE_MIN+Math.random()*(CRANE_MAX-CRANE_MIN)}
  for(const r of rolls)if(!r.removed)r.ang+=.045;
+ if(lightT>0&&lightT<90)lightT++;
  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.life--}
  parts=parts.filter(p=>p.life>0);
  for(const t of toasts)t.t--;toasts=toasts.filter(t=>t.t>0);
@@ -603,6 +658,8 @@ function renderWorld(){
  if(!P.remote&&state!=='crane'){b.drawImage(REMOTE,REMOTE_POST-3,130);if(pending()&&P.board&&(frame>>4)%2)rect(b,'#ffd23f',REMOTE_POST,124,2,2)}
  if(!P.board){b.drawImage(CLIP,TABLE.x+20,TABLE.y-10);if(P.epi&&(frame>>4)%2)rect(b,'#ffd23f',TABLE.x+24,TABLE.y-16,2,2)}
  if(!P.epi&&state!=='title'&&state!=='brief'&&(frame>>4)%2)rect(b,'#60a5fa',LOCKER.x+14,102,2,2);
+ rect(b,power?'#22c55e':((frame>>3)%2?'#ef4444':'#5a1a1a'),PANEL.x+4,135,3,3);rect(b,power?'#14532d':'#22c55e',PANEL.x+PANEL.w-7,135,3,3);
+ if(!power&&P.epi&&state==='play'&&(frame>>4)%2)rect(b,'#facc15',PANEL.x+PANEL.w/2-1,100,3,3);
  cradle.forEach((ri,i)=>{if(ri!==undefined)drawRoll(b,CRADLE_SLOTS[i],CRADLE_Y,'used',0)});
  // Strip over the rolls (moving marks).
  rect(b,'#dcdae4',380,STRIP_Y,1380,2);rect(b,'#8f8aa0',380,STRIP_Y+2,1380,1);
@@ -669,6 +726,19 @@ function renderWorld(){
  }
  b.globalAlpha=.16+Math.sin(frame/7)*.03;b.fillStyle='#ff7a2a';b.fillRect(FURN.x,FLOOR-2,FURN.w,4);b.globalAlpha=.07;b.fillRect(FURN.x,FLOOR+2,FURN.w,10);b.globalAlpha=1;
  b.setTransform(1,0,0,1,0,0);
+ const lv=lightLevel();
+ if(lv<1){
+  lm.globalCompositeOperation='source-over';lm.clearRect(0,0,VW,VH);
+  lm.fillStyle=`rgba(3,3,12,${.92*(1-lv)})`;lm.fillRect(0,0,VW,VH);
+  lm.globalCompositeOperation='destination-out';
+  const hole=(x,y,r,a)=>{const gr=lm.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(0,0,0,${a})`);gr.addColorStop(1,'rgba(0,0,0,0)');lm.fillStyle=gr;lm.fillRect(x-r,y-r,r*2,r*2)};
+  if(state!=='title'&&state!=='brief'){const px=P.x+5-cx,py=P.y+3;hole(px,py,46,1);hole(px+P.face*34,py+10,44,.85)}
+  if(WIN.x+WIN.w>cx&&WIN.x<cx+VW){const gr=lm.createLinearGradient(0,WIN.y-8,0,FLOOR+24);gr.addColorStop(0,'rgba(0,0,0,.25)');gr.addColorStop(.75,'rgba(0,0,0,.92)');gr.addColorStop(1,'rgba(0,0,0,.15)');lm.fillStyle=gr;lm.fillRect(WIN.x-cx-12,WIN.y-8,WIN.w+24,FLOOR+24-WIN.y)}
+  for(const x of EMERG)hole(x-cx,30,24,.55);
+  hole(PANEL.x+PANEL.w/2-cx,148,24,.7);
+  b.drawImage(LM,0,0);
+  for(const x of EMERG)if(x>cx-10&&x<cx+VW+10){rect(b,'#1b1a22',x-cx-5,24,10,6);rect(b,(frame>>4)%2?'#ef4444':'#7f1d1d',x-cx-4,25,8,4)}
+ }
  const vg=b.createRadialGradient(VW/2,VH/2,VH*.4,VW/2,VH/2,VH*.95);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.45)');b.fillStyle=vg;b.fillRect(0,0,VW,VH);
 }
 
@@ -797,30 +867,32 @@ function inspectUI(){
   txt('anotando na prancheta…',gx+gw/2,y+124,5.6,'#9a9aa2','center',SANS,500);
  }
 }
-function heroCard(style,x,y,selected){
- rr(x,y,62,62,6,selected?'rgba(241,81,27,.18)':'rgba(255,255,255,.05)',selected?'#f1511b':'rgba(255,255,255,.15)');
+function heroCard(m,x,y,selected){
+ const w=82,h=48;
+ rr(x,y,w,h,6,selected?'rgba(241,81,27,.18)':'rgba(255,255,255,.05)',selected?'#f1511b':'rgba(255,255,255,.15)');
  ctx.imageSmoothingEnabled=false;
- const f=HERO[style+'1'+(selected&&(frame>>3)%2?'walkA':'idle')];ctx.drawImage(f.r,x+19,y+6,24,32);
- txt(style==='b'?'Rafaela':'Rolando',x+31,y+42,7,'#fff','center',SANS,800);
- txt(style==='b'?'Técnica · RB1':'Técnico · RB1',x+31,y+51,5,'#9a9aa2','center',SANS,500);
- buttons.push({x,y,w:62,h:62,fn:()=>{if(hero===style)beginShift();else{hero=style;store.set('rb1game.hero',hero);AU.sfx('select')}}});
+ const f=HERO[m.id+'1'+(selected&&(frame>>3)%2?'walkA':'idle')];ctx.drawImage(f.r,x+6,y+8,24,32);
+ txt(m.name,x+34,y+12,6.8,'#fff','left',SANS,800,w-38);
+ if(m.role==='elec'){rr(x+34,y+22,40,9,3,'rgba(250,204,21,.16)','#facc15');txt('⚡ Eletricista',x+54,y+23.6,4.8,'#facc15','center',SANS,700)}
+ else txt('Técnico · RB1',x+34,y+23.5,5,'#9a9aa2','left',SANS,500);
+ txt(m.role==='elec'?'NR-10':'Manutenção',x+34,y+35,4.4,'#6b6b74','left',SANS,600);
+ buttons.push({x,y,w,h,fn:()=>{if(hero===m.id)beginShift();else{hero=m.id;store.set('rb1game.hero',hero);AU.sfx('select')}}});
 }
 function titleUI(){
- ctx.fillStyle='rgba(6,6,10,.62)';ctx.fillRect(0,0,VW,VH);
+ ctx.fillStyle='rgba(6,6,10,.66)';ctx.fillRect(0,0,VW,VH);
  corner(false);
- txt('RB1 ROLL · APRESENTA',VW/2,18,5.5,'#a78bfa','center');
- shadowText('A MISSÃO DO FORNO',VW/2,32,13,'#fff','center');
- ctx.fillStyle='#f1511b';ctx.fillRect(VW/2+109,42,4,4);
- txt('Inspecione os rolos, troque os que estão em prioridade com a ponte rolante e volte para casa em segurança.',VW/2,52,6.2,'#d4d4d8','center',SANS,500,VW-40);
- txt('ESCOLHA SEU PERSONAGEM',VW/2,66,4.8,'#9a9aa2','center');
- heroCard('a',VW/2-68,76,hero==='a');heroCard('b',VW/2+6,76,hero==='b');
- txt('← → escolher · uniforme Aperam',VW/2,142,5.4,'#9a9aa2','center',SANS,500);
- if((frame>>5)%2===0)txt('PRESSIONE ENTER OU TOQUE NO PERSONAGEM',VW/2,154,5.4,'#ffd23f','center');
- const ctl=[['← →','andar'],['↑ / ESPAÇO','pular'],['E','agir'],['C','prancheta'],['P','pausa'],['M','som']];
- let cx=VW/2-ctl.length*30;
- ctl.forEach(([k,v])=>{rr(cx,170,56,18,4,'rgba(255,255,255,.06)','rgba(255,255,255,.14)');txt(k,cx+28,174,4.6,'#fff','center');txt(v,cx+28,181,5,'#9a9aa2','center',SANS,500);cx+=60});
- txt('Ponte rolante: ← → mover · ↑ ↓ gancho · E engatar/soltar · Q sair',VW/2,194,5.2,'#9a9aa2','center',SANS,500);
- if(best)txt('RECORDE: '+best,VW/2,207,4.6,'#6b6b74','center');
+ txt('RB1 ROLL · APRESENTA',VW/2,12,5.5,'#a78bfa','center');
+ shadowText('A MISSÃO DO FORNO',VW/2,24,13,'#fff','center');
+ ctx.fillStyle='#f1511b';ctx.fillRect(VW/2+109,34,4,4);
+ txt('Inspecione os rolos, troque os que estão em prioridade com a ponte rolante e volte para casa em segurança.',VW/2,43,6,'#d4d4d8','center',SANS,500,VW-40);
+ txt('ESCOLHA SEU PERSONAGEM',VW/2,56,4.8,'#9a9aa2','center');
+ const x0=(VW-4*82-3*6)/2;
+ CREW.forEach((m,i)=>heroCard(m,x0+(i%4)*88,66+(i/4|0)*53,hero===m.id));
+ const m=me();
+ txt(m.role==='elec'?`${m.name} é eletricista: a planta começa sem energia. Religue o disjuntor geral com segurança (NR-10).`:`${m.name} · técnico de manutenção do RB1 · uniforme Aperam`,VW/2,173,5.8,m.role==='elec'?'#facc15':'#d4d4d8','center',SANS,600,VW-30);
+ if((frame>>5)%2===0)txt('ENTER OU TOQUE NO PERSONAGEM PARA COMEÇAR',VW/2,185,5.2,'#ffd23f','center');
+ txt('← → ↑ ↓ escolher · E agir · C prancheta · P pausa · M som · Ponte: ← → mover, ↑ ↓ gancho, E engatar, Q sair',VW/2,199,4.9,'#9a9aa2','center',SANS,500,VW-24);
+ if(best)txt('RECORDE: '+best,VW/2,211,4.4,'#6b6b74','center');
 }
 function briefUI(){
  ctx.fillStyle='rgba(6,6,10,.72)';ctx.fillRect(0,0,VW,VH);
@@ -828,10 +900,36 @@ function briefUI(){
  rr(x+14,y+12,22,22,5,'#16a34a');ctx.strokeStyle='#fff';ctx.lineWidth=1.6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+19,y+23);ctx.lineTo(x+23,y+27);ctx.lineTo(x+31,y+18);ctx.stroke();
  txt('DIÁLOGO DE SEGURANÇA',x+42,y+13,4.8,'#22c55e');
  txt(`Bom turno, ${heroName()}! Antes de começar:`,x+42,y+22,8,'#fff','left',SANS,800,w-56);
- const rules=[['#2563eb','EPI completo, sempre','Capacete, óculos, luvas e botina. Sem EPI, sem acesso à área do forno.'],['#ef4444','Nunca sob carga suspensa','Ao operar a ponte rolante, fique fora da rota e da área marcada em vermelho.'],['#f1511b','Respeite as áreas quentes','Fagulhas e vapor: observe os avisos e mantenha distância segura.'],['#facc15','Pare e comunique','Condição insegura? Você tem o direito de recusa. Nenhuma tarefa vale um acidente.']];
+ const rules=[['#2563eb','EPI completo, sempre','Capacete, óculos, luvas e botina. Sem EPI, sem acesso à área do forno.'],['#ef4444','Nunca sob carga suspensa','Ao operar a ponte rolante, fique fora da rota e da área marcada em vermelho.'],['#f1511b','Respeite as áreas quentes','Fagulhas e vapor: observe os avisos e mantenha distância segura.'],isElec()?['#facc15','Energização segura (NR-10)','Sem energia na planta: luvas isolantes, avise a área e só então ligue o disjuntor geral.']:['#facc15','Pare e comunique','Condição insegura? Você tem o direito de recusa. Nenhuma tarefa vale um acidente.']];
  rules.forEach(([c,t,d],i)=>{const yy=y+42+i*28;rr(x+14,yy,w-28,24,4,'rgba(255,255,255,.04)','rgba(255,255,255,.08)');rr(x+19,yy+5,14,14,4,c);txt(String(i+1),x+26,yy+8.5,5.5,'#fff','center');txt(t,x+40,yy+4,6.6,'#fff','left',SANS,800);txt(d,x+40,yy+13,5.2,'#a1a1aa','left',SANS,500,w-62)});
  txt('Sua vida e a dos colegas vêm antes de qualquer meta.',x+w/2,y+158,6,'#e4e4e7','center',SANS,700);
  button('ENTENDI · COMEÇAR O TURNO',x+w/2-84,y+172,168,17,startPlay,true);
+}
+function breakerUI(){
+ const k=breaker;
+ ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);
+ const x=64,y=26,w=272,h=172;panel(x,y,w,h);
+ txt('QUADRO GERAL · 440 V',x+14,y+12,5,'#facc15');txt('Energização segura (NR-10)',x+14,y+21,9,'#fff','left',SANS,800);
+ // Breaker cabinet with the main lever.
+ const bx=x+16,by=y+42;
+ rr(bx,by,74,100,5,'#53606e','#6b7a8a');rr(bx+6,by+6,62,88,3,'#2a323b');
+ for(let i=0;i<4;i++){rr(bx+10+i*14,by+12,10,18,2,'#1b1a22');ctx.fillStyle=k.lever>=1?'#22c55e':'#3a3446';ctx.fillRect(bx+13+i*14,by+15,4,4)}
+ rr(bx+22,by+40,30,46,4,'#1b1a22','#9aa0ae');
+ const ly=by+76-k.lever*28;rr(bx+30,ly-6,14,12,3,k.lever>=1?'#22c55e':'#ef4444');ctx.fillStyle='#9aa0ae';ctx.fillRect(bx+36,ly+6,2,by+82-ly-6);
+ txt('ON',bx+37,by+33.5,4.5,k.lever>=1?'#22c55e':'#6b6b74','center');txt('OFF',bx+37,by+89,4.5,k.lever>=1?'#6b6b74':'#ef4444','center');
+ // Procedure steps.
+ const steps=[['EPI e luvas isolantes conferidos','Capacete, óculos e luvas isolantes OK.'],['Avisar a área','Sinalize e confirme que ninguém está exposto.'],['Ligar o disjuntor geral','Posicione-se de lado e acione a alavanca.']];
+ steps.forEach(([t,d],i)=>{
+  const yy=y+44+i*30,done=k.step>i+1||(k.step===3&&i===2&&k.lever>=1),cur=k.step===i+1&&!done;
+  rr(x+102,yy,w-116,26,4,cur?'rgba(250,204,21,.12)':'rgba(255,255,255,.04)',cur?'#facc15':'rgba(255,255,255,.08)');
+  ctx.beginPath();ctx.arc(x+112,yy+13,5,0,Math.PI*2);ctx.fillStyle=done?'#22c55e':cur?'#facc15':'#3a3446';ctx.fill();
+  if(done){ctx.strokeStyle='#0a0a0a';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x+109.5,yy+13);ctx.lineTo(x+111.5,yy+15);ctx.lineTo(x+114.8,yy+10.8);ctx.stroke()}
+  else txt(String(i+1),x+112,yy+10.6,4.6,'#0a0a0a','center');
+  txt(t,x+122,yy+5,6.2,'#fff','left',SANS,800,w-136);txt(d,x+122,yy+14,5,'#a1a1aa','left',SANS,500,w-136);
+ });
+ const label=k.step===1?'E · CONFIRMAR EPI':k.step===2?'E · AVISAR A ÁREA':k.lever>=1?'ENERGIZADO!':'LIGANDO…';
+ rr(x+102,y+138,w-116,18,4,k.step===3?'#22c55e':'#f1511b');txt(label,x+102+(w-116)/2,y+144,5.4,'#fff','center');
+ txt('Q · cancelar',x+w-14,y+h-10,5,'#6b6b74','right',SANS,500);
 }
 function pauseUI(){
  ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);
@@ -866,13 +964,16 @@ function enterPanel(){if(embedded)parent.postMessage({type:'rb1:enter'},'*');els
 let last=performance.now(),acc=0;
 function step(){
  if(state==='title'){
-  if(take('left')||take('right')){hero=hero==='a'?'b':'a';store.set('rb1game.hero',hero);AU.sfx('select')}
-  if(take('act')||take('jump'))beginShift();
+  const i=CREW.findIndex(c=>c.id===hero),n=CREW.length;
+  const d=take('left')?-1:take('right')?1:take('jump')?-4:take('down')?4:0;
+  if(d){hero=CREW[(i+d+n)%n].id;store.set('rb1game.hero',hero);AU.sfx('select')}
+  if(take('act'))beginShift();
  }
  else if(state==='brief'){if(take('act')||take('jump'))startPlay()}
  else if(state==='play'){updatePlay();updateHazards()}
  else if(state==='crane'){updateCrane();if(state==='crane'||state==='play'){physics(false);updateHazards()}}
  else if(state==='inspect')updateInspect();
+ else if(state==='breaker')updateBreaker();
  else if(state==='pause'){if(take('pause')||take('act'))state=paused;if(take('restart'))beginShift()}
  else if(state==='done'){if(take('restart'))beginShift();if(take('act'))enterPanel()}
  if((state==='play'||state==='crane')&&take('restart'))beginShift();
@@ -892,12 +993,13 @@ function loop(now){
   if(state==='crane')remoteUI();
   toastsUI();
   if(state==='inspect')inspectUI();
+  if(state==='breaker')breakerUI();
   if(state==='pause')pauseUI();
   if(state==='done')doneUI();
  }
  requestAnimationFrame(loop);
 }
 // Read-only hook for automated checks.
-window.__rb1={get state(){return state},get P(){return P},get rolls(){return rolls},get stats(){return stats},get crane(){return crane},get cradle(){return cradle}};
+window.__rb1={get power(){return power},get hero(){return hero},get state(){return state},get P(){return P},get rolls(){return rolls},get stats(){return stats},get crane(){return crane},get cradle(){return cradle}};
 (document.fonts?document.fonts.ready:Promise.resolve()).then(()=>requestAnimationFrame(loop));
 })();
