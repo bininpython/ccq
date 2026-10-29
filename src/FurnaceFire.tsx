@@ -1,9 +1,9 @@
 import {useEffect,useRef} from 'react';
 
 /** Decorative combustion illustration, independent of equipment telemetry.
- * Particle flames rise from a row of burners and stay low and translucent so the rolls remain readable. */
+ * Particle flames rise from a row of burners, confined to the heating band below the rolls. */
 type Particle={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;seed:number;ember:boolean};
-const burners=[.07,.2,.33,.46,.59,.72,.85,.96];
+const burners=[.06,.19,.31,.44,.56,.69,.81,.94];
 
 function sprite(stops:[number,string][]){
  const c=document.createElement('canvas');c.width=c.height=64;
@@ -31,11 +31,11 @@ export function FurnaceFire({animated}:{animated:boolean}){
    const b=burners[Math.floor(Math.random()*burners.length)];
    const isEmber=Math.random()<.012;
    const max=isEmber?1.2+Math.random()*.8:.7+Math.random()*.5;
-   particles.push({x:(b+(Math.random()-.5)*.055)*width,y:height-2,vx:(Math.random()-.5)*height*.04,vy:-height*(isEmber?.2+Math.random()*.15:.18+Math.random()*.16),life:0,max,size:height*(isEmber?.008+Math.random()*.006:.07+Math.random()*.05),seed:Math.random()*100,ember:isEmber});
+   particles.push({x:(b+(Math.random()-.5)*.03)*width,y:height-2,vx:(Math.random()-.5)*height*.04,vy:-height*(isEmber?.5+Math.random()*.3:.5+Math.random()*.35),life:0,max,size:height*(isEmber?.03+Math.random()*.02:.26+Math.random()*.16),seed:Math.random()*100,ember:isEmber});
   }
   function step(dt:number){
    time+=dt;
-   const rate=width*.35*dt;
+   const rate=width*.28*dt;
    for(let i=0;i<rate;i++)spawn();
    for(const p of particles){
     p.life+=dt;
@@ -67,7 +67,7 @@ export function FurnaceFire({animated}:{animated:boolean}){
      const s=p.size*2.4;ctx!.drawImage(ember,p.x-s/2,p.y-s/2,s,s);continue;
     }
     const img=sprites[k<.25?0:k<.5?1:k<.75?2:3];
-    ctx!.globalAlpha=Math.max(0,(1-k)*(k<.15?k/.15:1))*.32;
+    ctx!.globalAlpha=Math.max(0,(1-k)*(k<.15?k/.15:1))*.42;
     const s=p.size*(1+k*.5);
     ctx!.drawImage(img,p.x-s/2,p.y-s,s,s*2);
    }

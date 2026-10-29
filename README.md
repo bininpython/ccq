@@ -6,7 +6,7 @@ Painel em React + TypeScript, **sem login e sem senha**, com identidade visual r
 
 - Interface minimalista: barra lateral escura com telas numeradas, cabeçalho por tela, tema claro/escuro e layout adaptado ao celular.
 - Paleta de comandos (**Ctrl K** / **⌘ K**) para abrir telas, registrar troca, iniciar checklist, exportar CSV, trocar o tema e abrir qualquer rolo.
-- Diagrama do forno em SVG: carcaça, revestimento refratário, queimadores e chamas animadas; a tira passa por cima dos rolos 0 a 4. Clique em um rolo para abrir os detalhes.
+- Diagrama esquemático do forno: a tira passa por cima dos rolos 0 a 4, que mostram a cor do status; as chamas ficam numa zona de aquecimento separada, abaixo dos rolos. Clique em um rolo para abrir os detalhes.
 - Cartões por posição com barra de campanha (limites de 6 e 11 dias).
 
 - Mapa das posições 0 a 4 conforme a referência: rolo 0 externo e 1–4 no forno.
