@@ -59,7 +59,7 @@ function App(){
   <div className="quick"><div className="quick-head"><span className="aside-label">VISÃO RÁPIDA</span><span className="quick-legend" title="Em dia 0–5 dias · Atenção 6–10 dias · Prioridade 11+ dias">{(['green','yellow','red'] as const).map(k=><i key={k} className={k}/>)}</span></div>
    {rolls.map(r=><button key={r.id} className={'quick-item '+r.status} onClick={()=>open('detail',r.id)} title={`Abrir detalhes do ${r.name}`}>
     <span className="quick-pos">{r.id}</span>
-    <span className="quick-body"><b>{r.name}</b><small>{r.id===0?'Externo':'Forno · posição '+r.id}</small></span>
+    <span className="quick-body"><b>{r.name}</b><small>{r.id===0?'Externo':'Forno · posição '+r.id}</small><small className="quick-perim">{r.diameter?`Perímetro ${num(Math.round(Math.PI*r.diameter))} mm`:'Perímetro —'}</small></span>
     <em className="quick-days">{r.days===null?'—':r.days+(r.days===1?' dia':' dias')}</em>
    </button>)}
   </div>
