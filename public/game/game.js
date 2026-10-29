@@ -138,18 +138,20 @@ const LEGS={
  walkB:['....DDDd....','....DDDd....','....BBBb....','...BBBBb....'],
  jump:['..DDd..DDd..','.DDd....DDd.','.BBb....BBb.','............'],
 };
-// Equipe jogável. Os eletricistas (Rodrigo e Edgar) usam capacete azul e luvas isolantes e começam o turno
+// Equipe jogável: operadores (capacete laranja), supervisor (capacete branco) e eletricistas.
+// Os eletricistas (Rodrigo e Edgar) usam capacete azul e luvas isolantes e começam o turno
 // religando o disjuntor geral, porque a planta está sem energia.
 const CREW=[
- {id:'davi',name:'Davi',role:'tech',hair:'#2b1d16',skin:'#e0a982',shade:'#b97f5b',style:'short'},
+ {id:'davi',name:'Davi',role:'op',hair:'#2b1d16',skin:'#e0a982',shade:'#b97f5b',style:'short'},
  {id:'rodrigo',name:'Rodrigo',role:'elec',hair:'#1f1612',skin:'#c98d63',shade:'#9f6b47',style:'short',face:'beard'},
- {id:'rafael',name:'Rafael',role:'tech',hair:'#141014',skin:'#9c6a46',shade:'#7a4f32',style:'curly'},
- {id:'savio',name:'Sávio',role:'tech',hair:'#3a2a1e',skin:'#f0c4a0',shade:'#cf9a74',style:'buzz'},
- {id:'william',name:'William',role:'tech',hair:'#8a5a32',skin:'#f3cba9',shade:'#d19f7b',style:'swept'},
- {id:'tales',name:'Tales Jacob',role:'tech',hair:'#1b1410',skin:'#8a5a3c',shade:'#6a422a',style:'buzz',face:'beard'},
- {id:'abner',name:'Abner',role:'tech',hair:'#120e10',skin:'#d39a70',shade:'#a8724e',style:'swept'},
+ {id:'rafael',name:'Rafael',role:'op',hair:'#141014',skin:'#9c6a46',shade:'#7a4f32',style:'curly'},
+ {id:'savio',name:'Sávio',role:'sup',hair:'#3a2a1e',skin:'#f0c4a0',shade:'#cf9a74',style:'buzz'},
+ {id:'william',name:'William',role:'op',hair:'#8a5a32',skin:'#f3cba9',shade:'#d19f7b',style:'swept'},
+ {id:'tales',name:'Tales Jacob',role:'op',hair:'#1b1410',skin:'#8a5a3c',shade:'#6a422a',style:'buzz',face:'beard'},
+ {id:'abner',name:'Abner',role:'op',hair:'#120e10',skin:'#d39a70',shade:'#a8724e',style:'swept'},
  {id:'edgar',name:'Edgar',role:'elec',hair:'#8d8a92',skin:'#eab892',shade:'#c48b66',style:'short',face:'mustache'},
 ];
+const ROLES={op:{label:'Operador',chip:'#f1511b',area:'Operação · RB1'},sup:{label:'Supervisor',chip:'#a78bfa',area:'Supervisão do turno'},elec:{label:'⚡ Eletricista',chip:'#facc15',area:'NR-10'}};
 const crewById=id=>CREW.find(c=>c.id===id)||CREW[0];
 const HAIR={
  short:['............','....HHHH....','...HHHHHH...','..HHHHHHHH..'],
@@ -167,8 +169,8 @@ function heroRows(m,epi,legs){
  return[...top,`..${side}SSSSSSS..`,`..${side}${eye}s..`,mouth,chin,'..cCCCCCCc..',`.${hand}cCWOOCCc${hand}.`,`.${hand}cCCCCCCc${hand}.`,'..dDDDDDDd..',...legs];
 }
 function crewPal(m){
- const elec=m.role==='elec';
- return{...PAL,H:m.hair,S:m.skin,s:m.shade,...(elec?{O:'#2563eb',o:'#1e3a8a',h:'#60a5fa',L:'#facc15'}:{})};
+ const helmet=m.role==='elec'?{O:'#2563eb',o:'#1e3a8a',h:'#60a5fa',L:'#facc15'}:m.role==='sup'?{O:'#ececf1',o:'#a1a1aa',h:'#ffffff'}:{};
+ return{...PAL,H:m.hair,S:m.skin,s:m.shade,...helmet};
 }
 const HERO={};
 for(const m of CREW)for(const epi of [0,1])for(const [k,legs] of Object.entries(LEGS)){
@@ -873,9 +875,9 @@ function heroCard(m,x,y,selected){
  ctx.imageSmoothingEnabled=false;
  const f=HERO[m.id+'1'+(selected&&(frame>>3)%2?'walkA':'idle')];ctx.drawImage(f.r,x+6,y+8,24,32);
  txt(m.name,x+34,y+12,6.8,'#fff','left',SANS,800,w-38);
- if(m.role==='elec'){rr(x+34,y+22,40,9,3,'rgba(250,204,21,.16)','#facc15');txt('⚡ Eletricista',x+54,y+23.6,4.8,'#facc15','center',SANS,700)}
- else txt('Técnico · RB1',x+34,y+23.5,5,'#9a9aa2','left',SANS,500);
- txt(m.role==='elec'?'NR-10':'Manutenção',x+34,y+35,4.4,'#6b6b74','left',SANS,600);
+ const role=ROLES[m.role];
+ rr(x+34,y+22,40,9,3,role.chip+'29',role.chip);txt(role.label,x+54,y+23.6,4.8,role.chip,'center',SANS,700);
+ txt(role.area,x+34,y+35,4.4,'#6b6b74','left',SANS,600,w-38);
  buttons.push({x,y,w,h,fn:()=>{if(hero===m.id)beginShift();else{hero=m.id;store.set('rb1game.hero',hero);AU.sfx('select')}}});
 }
 function titleUI(){
@@ -889,7 +891,7 @@ function titleUI(){
  const x0=(VW-4*82-3*6)/2;
  CREW.forEach((m,i)=>heroCard(m,x0+(i%4)*88,66+(i/4|0)*53,hero===m.id));
  const m=me();
- txt(m.role==='elec'?`${m.name} é eletricista: a planta começa sem energia. Religue o disjuntor geral com segurança (NR-10).`:`${m.name} · técnico de manutenção do RB1 · uniforme Aperam`,VW/2,173,5.8,m.role==='elec'?'#facc15':'#d4d4d8','center',SANS,600,VW-30);
+ txt(m.role==='elec'?`${m.name} é eletricista: a planta começa sem energia. Religue o disjuntor geral com segurança (NR-10).`:m.role==='sup'?`${m.name} · supervisor do turno do RB1 · uniforme Aperam`:`${m.name} · operador do RB1 · uniforme Aperam`,VW/2,173,5.8,m.role==='elec'?'#facc15':'#d4d4d8','center',SANS,600,VW-30);
  if((frame>>5)%2===0)txt('ENTER OU TOQUE NO PERSONAGEM PARA COMEÇAR',VW/2,185,5.2,'#ffd23f','center');
  txt('← → ↑ ↓ escolher · E agir · C prancheta · P pausa · M som · Ponte: ← → mover, ↑ ↓ gancho, E engatar, Q sair',VW/2,199,4.9,'#9a9aa2','center',SANS,500,VW-24);
  if(best)txt('RECORDE: '+best,VW/2,211,4.4,'#6b6b74','center');
