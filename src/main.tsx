@@ -23,7 +23,6 @@ const localDay=(s:string)=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sa
 const themeKey='ccq.theme';
 const Logo=({size=22}:{size?:number})=><svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"><path d="M2.8 5.2h18.4" stroke="#0a0a0a" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="13.6" r="7.2" fill="none" stroke="#0a0a0a" strokeWidth="2.4"/><path d="M12 6.4a7.2 7.2 0 0 1 7.2 7.2" fill="none" stroke="#f1511b" strokeWidth="2.4" strokeLinecap="round"/><circle cx="12" cy="13.6" r="1.9" fill="#0a0a0a"/></svg>;
 const num=(v:number)=>v.toLocaleString('pt-BR',{maximumFractionDigits:1});
-const perimeter=(d:number|null)=>d?Math.PI*d:null;
 function App(){
  const [animated,setAnimated]=useState(true);
  const [dark,setDark]=useState(()=>localStorage.getItem(themeKey)==="dark");
@@ -58,12 +57,11 @@ function App(){
   <nav aria-label="Telas">{nav.map(([id,text,Icon],i)=><button key={id} onClick={()=>setTab(id)} className={tab===id?'active':''} aria-current={tab===id?'page':undefined}><span className="nav-index">0{i+1}</span><Icon size={17}/><span className="nav-text">{text}</span>{tab===id&&<i className="nav-dot"/>}</button>)}</nav>
   <button className="command-button" onClick={()=>setPalette(true)}><CommandIcon size={15}/>Comandos<kbd>Ctrl K</kbd></button>
   <div className="quick"><div className="quick-head"><span className="aside-label">VISÃO RÁPIDA</span><span className="quick-legend" title="Em dia 0–5 dias · Atenção 6–10 dias · Prioridade 11+ dias">{(['green','yellow','red'] as const).map(k=><i key={k} className={k}/>)}</span></div>
-   {rolls.map(r=>{const last=state?.events.find(e=>e.roll_id===r.id);const p=perimeter(r.diameter);return <button key={r.id} className={'quick-item '+r.status} onClick={()=>open('detail',r.id)} title={`Abrir detalhes do ${r.name}`}>
+   {rolls.map(r=><button key={r.id} className={'quick-item '+r.status} onClick={()=>open('detail',r.id)} title={`Abrir detalhes do ${r.name}`}>
     <span className="quick-pos">{r.id}</span>
-    <span className="quick-body"><span className="quick-top"><b>{r.id===0?'Externo':'Posição '+r.id}</b><em>{r.days===null?'—':r.days+(r.days===1?' dia':' dias')}</em></span>
-     <small className="quick-dim">{r.diameter&&p?`Ø ${num(r.diameter)} · P ${num(Math.round(p))} mm`:'Ø / perímetro não informado'}</small>
-     <small className="quick-note">{last?(last.notes||last.reason):'Sem trocas registradas'}</small></span>
-   </button>})}
+    <span className="quick-body"><b>{r.name}</b><small>{r.id===0?'Externo':'Forno · posição '+r.id}</small></span>
+    <em className="quick-days">{r.days===null?'—':r.days+(r.days===1?' dia':' dias')}</em>
+   </button>)}
   </div>
   <div className="aside-foot"><div className={'storage-line '+(storageMode()||'pending')}><ShieldCheck size={14}/>{storageMode()==='local'?'Modo local · neste navegador':storageMode()==='server'?'Servidor compartilhado':'Conectando…'}</div><div className="shift-card"><span className="avatar">{currentShift}</span><div><strong>{shiftNames[currentShift]}</strong><small>Acesso sem login</small></div><button onClick={()=>void reload()} aria-label="Atualizar dados" title="Atualizar dados"><RefreshCw size={15}/></button></div></div>
  </aside><main>

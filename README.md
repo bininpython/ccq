@@ -12,7 +12,7 @@ Painel em React + TypeScript, **sem login e sem senha**, com identidade visual r
 - Mapa das posições 0 a 4 conforme a referência: rolo 0 externo e 1–4 no forno.
 - Cores automáticas: **0–5 dias verde**, **6–10 amarelo**, **11+ vermelho**. Sem data: cinza. Contagem por dias de calendário em Brasília.
 - Trocas com data, hora, turno identificado automaticamente pelo horário (TN 23h–07h, TM 07h–15h, TT 15h–23h), posição, motivo, diâmetro (o perímetro π × Ø é calculado automaticamente) e observações. A identificação do rolo deixou de ser pedida; a API ainda aceita o campo `serial` como opcional.
-- Barra lateral com visão rápida de cada posição (0 a 4): dias em uso, diâmetro, perímetro e a última observação registrada.
+- Barra lateral com visão rápida de cada posição (0 a 4): rolo e tempo de uso no forno.
 - Histórico de trocas com filtros por texto, posição, turno e período (de/até).
 - Exportação em **PDF** e **Excel (.xlsx)** no padrão visual do sistema, com exatamente os registros filtrados: tabela de trocas, resumo por turno/posição/motivo e condição atual de cada posição.
 - Checklist de inspeção disponível pela API (a tela de inspeções foi retirada da interface).
