@@ -1,22 +1,19 @@
 import {useEffect,useRef} from 'react';
 
 /** Decorative combustion illustration, independent of equipment telemetry.
- * A low-resolution heat field: each burner feeds heat at the bottom, heat rises with random
- * cooling and lateral drift, and a color ramp turns it into flame (white core → yellow → orange → red). */
+ * Each burner draws smooth vector flame tongues (outer, body and core layers) whose height,
+ * width and tip sway follow layered sine noise, so the motion is fluid and never pixelated. */
 const burners=[.06,.19,.31,.44,.56,.69,.81,.94];
-const CELL=3;
 
-// Heat (0..255) → RGBA. Transparent when cold so the flames sit on the chamber background.
-const ramp=(()=>{
- const stops:[number,number,number,number,number][]=[[0,90,10,0,0],[.12,150,25,5,0],[.28,205,45,10,.45],[.45,240,95,18,.8],[.62,255,145,35,.95],[.8,255,200,90,1],[.93,255,236,170,1],[1,255,250,225,1]];
- const lut=new Uint8ClampedArray(256*4);
- for(let i=0;i<256;i++){
-  const v=i/255;let k=0;while(k<stops.length-2&&v>stops[k+1][0])k++;
-  const [a,r1,g1,b1,o1]=stops[k],[c,r2,g2,b2,o2]=stops[k+1],t=Math.min(1,Math.max(0,(v-a)/(c-a)));
-  lut.set([r1+(r2-r1)*t,g1+(g2-g1)*t,b1+(b2-b1)*t,255*(o1+(o2-o1)*t)],i*4);
- }
- return lut;
-})();
+// Smooth pseudo-noise in [-1,1] from a few incommensurate sines.
+const noise=(t:number,seed:number)=>Math.sin(t*1.7+seed)*.5+Math.sin(t*3.1+seed*2.3)*.3+Math.sin(t*5.3+seed*.7)*.2;
+
+type Layer={w:number;h:number;stops:[number,string][];blur:number};
+const layers:Layer[]=[
+ {w:1,h:1,blur:3,stops:[[0,'rgba(255,120,30,.95)'],[.35,'rgba(244,82,24,.75)'],[.75,'rgba(214,48,20,.3)'],[1,'rgba(190,30,15,0)']]},
+ {w:.68,h:.78,blur:1.5,stops:[[0,'rgba(255,196,80,1)'],[.45,'rgba(255,150,40,.85)'],[1,'rgba(255,110,30,0)']]},
+ {w:.36,h:.46,blur:1,stops:[[0,'rgba(255,252,236,1)'],[.5,'rgba(255,228,150,.9)'],[1,'rgba(255,190,90,0)']]},
+];
 
 export function FurnaceFire({animated}:{animated:boolean}){
  const canvasRef=useRef<HTMLCanvasElement>(null);
@@ -24,59 +21,51 @@ export function FurnaceFire({animated}:{animated:boolean}){
   const canvas=canvasRef.current;const ctx=canvas?.getContext('2d');
   if(!canvas||!ctx)return;
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
-  const buffer=document.createElement('canvas');const bctx=buffer.getContext('2d')!;
-  let width=1,height=1,cols=1,rows=1,heat=new Float32Array(1),image=bctx.createImageData(1,1);
-  let frame=0,last=0,visible=true,disposed=false,time=0;
-  function seed(){
-   // Burner row: a soft profile under each burner, flickering independently.
-   const base=(rows-1)*cols;
-   for(let x=0;x<cols;x++){
-    let v=0;
-    for(let i=0;i<burners.length;i++){
-     const d=(x/cols-burners[i])/.024;
-     v=Math.max(v,Math.exp(-d*d)*(.82+.18*Math.sin(time*7+i*2.3)+Math.random()*.12));
-    }
-    heat[base+x]=Math.min(1,v);
-   }
-  }
-  function step(){
-   time+=1/30;seed();
-   // Cooling per row tuned so the tallest tongues stay inside the band.
-   // Each cell pulls a blend of the cells below it (shifted by a gentle, symmetric sway) and cools a little.
-   const cool=1.45/rows;
-   for(let y=0;y<rows-1;y++){
-    const below=(y+1)*cols,sway=Math.sin(time*2.3+y*.7)*.18;
-    for(let x=0;x<cols;x++){
-     const sx=Math.min(cols-2,Math.max(1,Math.round(x-sway+(Math.random()-.5)*1.6)));
-     const v=heat[below+sx]*.5+heat[below+sx-1]*.25+heat[below+sx+1]*.25;
-     heat[y*cols+x]=Math.max(0,v-Math.random()*cool);
-    }
-   }
+  let width=1,height=1,frame=0,last=0,visible=true,disposed=false,time=3;
+  function tongue(cx:number,base:number,w:number,h:number,sway:number,stops:[number,string][]){
+   const tip=base-h;
+   const g=ctx!.createLinearGradient(0,base,0,tip);
+   for(const [o,c] of stops)g.addColorStop(o,c);
+   ctx!.fillStyle=g;
+   ctx!.beginPath();
+   ctx!.moveTo(cx-w/2,base);
+   ctx!.bezierCurveTo(cx-w*.62,base-h*.32,cx-w*.18+sway*.35,base-h*.68,cx+sway,tip);
+   ctx!.bezierCurveTo(cx+w*.18+sway*.35,base-h*.68,cx+w*.62,base-h*.32,cx+w/2,base);
+   ctx!.quadraticCurveTo(cx,base+w*.18,cx-w/2,base);
+   ctx!.fill();
   }
   function draw(){
-   const data=image.data;
-   for(let i=0;i<heat.length;i++){const o=Math.round(Math.min(1,heat[i])*255)*4;data[i*4]=ramp[o];data[i*4+1]=ramp[o+1];data[i*4+2]=ramp[o+2];data[i*4+3]=ramp[o+3]}
-   bctx.putImageData(image,0,0);
    ctx!.clearRect(0,0,width,height);
-   ctx!.imageSmoothingEnabled=true;
-   // Soft glow pass, then the sharper flame body.
-   ctx!.globalAlpha=.55;ctx!.filter='blur(6px)';ctx!.drawImage(buffer,0,0,width,height);
-   ctx!.globalAlpha=1;ctx!.filter='blur(1.2px)';ctx!.drawImage(buffer,0,0,width,height);
+   const base=height-2,unit=Math.min(width/burners.length,height);
+   // Warm glow on the hearth under each burner.
+   for(const b of burners){
+    const x=b*width,g=ctx!.createRadialGradient(x,base,0,x,base,unit*.6);
+    g.addColorStop(0,'rgba(255,150,60,.35)');g.addColorStop(1,'rgba(255,120,40,0)');
+    ctx!.fillStyle=g;ctx!.fillRect(x-unit*.6,base-unit*.6,unit*1.2,unit*.6+2);
+   }
+   burners.forEach((b,i)=>{
+    const x=b*width,seed=i*1.93;
+    // A cluster of tongues per burner: tall center, shorter flanks.
+    const tongues=[{dx:-.17,s:.58,seed:seed+11},{dx:.17,s:.55,seed:seed+23},{dx:-.08,s:.8,seed:seed+31},{dx:.09,s:.76,seed:seed+41},{dx:0,s:1,seed}];
+    for(const t of tongues){
+     const n=noise(time,t.seed),n2=noise(time*1.3,t.seed+5);
+     const h=height*.94*t.s*(.82+.18*n),w=unit*.3*(.55+.45*t.s)*(.92+.08*n2),sway=unit*.08*n2;
+     for(const l of layers){ctx!.filter=`blur(${l.blur}px)`;tongue(x+t.dx*unit,base,w*l.w,h*l.h,sway*l.h,l.stops)}
+    }
+   });
    ctx!.filter='none';
   }
   function tick(ts:number){
    frame=0;if(disposed||!animated||reduced.matches||!visible||document.hidden)return;
-   if(ts-last>=1000/30){step();last=ts;draw()}
+   if(ts-last>=1000/40){time+=Math.min((ts-last)/1000,.05);last=ts;draw()}
    frame=requestAnimationFrame(tick);
   }
   function sync(){cancelAnimationFrame(frame);frame=0;last=performance.now();draw();if(animated&&!reduced.matches&&visible&&!document.hidden)frame=requestAnimationFrame(tick)}
   function resize(){
    const box=canvas!.getBoundingClientRect();if(!box.width||!box.height)return;
    width=box.width;height=box.height;
-   const dpr=Math.min(window.devicePixelRatio||1,1.5);
+   const dpr=Math.min(window.devicePixelRatio||1,2);
    canvas!.width=Math.round(width*dpr);canvas!.height=Math.round(height*dpr);ctx!.setTransform(dpr,0,0,dpr,0,0);
-   const c=Math.max(40,Math.round(width/CELL)),r=Math.max(16,Math.round(height/CELL));
-   if(c!==cols||r!==rows){cols=c;rows=r;buffer.width=cols;buffer.height=rows;heat=new Float32Array(cols*rows);image=bctx.createImageData(cols,rows);for(let i=0;i<rows*2;i++)step()}
    draw();
   }
   const observer=new ResizeObserver(resize);observer.observe(canvas);

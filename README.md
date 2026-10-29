@@ -5,15 +5,16 @@ Painel em React + TypeScript, **sem login e sem senha**, com identidade visual r
 ## Recursos
 
 - Interface minimalista: barra lateral escura com telas numeradas, cabeçalho por tela, tema claro/escuro e layout adaptado ao celular.
-- Paleta de comandos (**Ctrl K** / **⌘ K**) para abrir telas, registrar troca, iniciar checklist, exportar CSV, trocar o tema e abrir qualquer rolo.
+- Paleta de comandos (**Ctrl K** / **⌘ K**) para abrir telas, registrar troca, exportar PDF/Excel, trocar o tema e abrir qualquer rolo.
 - Diagrama esquemático do forno: a tira passa por cima dos rolos 0 a 4, que mostram a cor do status; as chamas ficam numa zona de aquecimento separada, abaixo dos rolos. Clique em um rolo para abrir os detalhes.
 - Cartões por posição com barra de campanha (limites de 6 e 11 dias).
 
 - Mapa das posições 0 a 4 conforme a referência: rolo 0 externo e 1–4 no forno.
 - Cores automáticas: **0–5 dias verde**, **6–10 amarelo**, **11+ vermelho**. Sem data: cinza. Contagem por dias de calendário em Brasília.
-- Trocas com data, hora, turno automático (TN 23–07, TM 07–15, TT 15–23), posição, motivo, identificação anterior/nova, diâmetro e observações.
-- Histórico de trocas pesquisável e exportável em CSV para Excel.
-- Checklist com anomalias que geram atividades no kanban.
+- Trocas com data, hora, turno identificado automaticamente pelo horário (TN 23h–07h, TM 07h–15h, TT 15h–23h), posição, motivo, identificação anterior/nova, diâmetro e observações.
+- Histórico de trocas com filtros por texto, posição, turno e período (de/até).
+- Exportação em **PDF** e **Excel (.xlsx)** no padrão visual do sistema, com exatamente os registros filtrados: tabela de trocas, resumo por turno/posição/motivo e condição atual de cada posição.
+- Checklist de inspeção disponível pela API (a tela de inspeções foi retirada da interface).
 - Kanban com etapas, identificação de quem moveu e histórico das movimentações.
 - Atualização do painel a cada 30 segundos, proteção contra versões conflitantes e validação de datas futuras.
 
@@ -54,7 +55,7 @@ Acesso livre, conforme solicitado. O operador é identificado pelo nome informad
 
 Na primeira utilização, registre a data real de instalação por posição com motivo “Primeiro cadastro / instalação”. As cores representam tempo de uso, não medição física. O checklist é preenchido por pessoas, sem conexão com sensores. Trocas não encerram atividades automaticamente. Cada inspeção com anomalia gera uma atividade.
 
-Faça backup consistente do banco do servidor pela API de backup SQLite (ou pare o servidor antes de copiar os arquivos). CSV exporta todas as trocas, independentemente dos filtros.
+Faça backup consistente do banco do servidor pela API de backup SQLite (ou pare o servidor antes de copiar os arquivos). Os relatórios PDF e Excel respeitam os filtros aplicados no histórico.
 
 ## Verificação
 
