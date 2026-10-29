@@ -19,6 +19,14 @@ Painel em React + TypeScript, **sem login e sem senha**, com identidade visual r
 - Kanban com etapas, identificação de quem moveu e histórico das movimentações.
 - Atualização do painel a cada 30 segundos, proteção contra versões conflitantes e validação de datas futuras.
 
+## Página inicial e jogo de apresentação
+
+O endereço principal (`/`) abre a página de apresentação do sistema, com o botão **Acessar painel** (sem login). O painel fica em `/#painel`.
+
+A página inicial traz o jogo **A Missão do Forno** (`/game/`), um jogo de plataforma em pixel art feito em HTML5 Canvas e Web Audio, sem dependências. O técnico Rolando pega a prancheta, inspeciona os 5 rolos num minijogo de leitura de desgaste, troca os rolos em prioridade com a ponte rolante, desvia de fagulhas e vapor, coleta EPI e registra tudo no terminal RB1 Roll. Personagem, gráficos e música são originais.
+
+Controles: ← → andar · ↑ ou espaço pular · E agir · C prancheta · P pausa · M som. No celular, botões na tela (melhor com o aparelho deitado).
+
 ## Hospedagem estática (Vercel, por exemplo)
 
 ```bash

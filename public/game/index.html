@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<title>RB1 Roll · A Missão do Forno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@500;700&display=swap" rel="stylesheet"/>
+<style>
+ html,body{margin:0;height:100%;background:#0a0a0a;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+ canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+ .touch{position:fixed;inset:auto 0 0 0;display:none;justify-content:space-between;padding:10px 12px calc(10px + env(safe-area-inset-bottom));pointer-events:none;opacity:.85}
+ .touch.on{display:flex}
+ .pad{display:flex;gap:12px;pointer-events:auto}
+ .touch button{width:54px;height:54px;border-radius:50%;border:2px solid #ffffff33;background:#ffffff0d;color:#fff;font:700 15px/1 Inter,sans-serif;backdrop-filter:blur(4px);touch-action:none}
+ .touch button.act{background:#f1511b55;border-color:#f1511baa}
+ .touch button:active,.touch button.down{background:#ffffff40}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Jogo RB1 Roll: A Missão do Forno"></canvas>
+<div class="touch" id="touch">
+ <div class="pad"><button data-k="left" aria-label="Esquerda">◀</button><button data-k="right" aria-label="Direita">▶</button></div>
+ <div class="pad"><button data-k="act" class="act" aria-label="Ação">E</button><button data-k="jump" aria-label="Pular">▲</button></div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

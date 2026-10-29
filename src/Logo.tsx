@@ -1,0 +1,2 @@
+// Marca do RB1 Roll: a tira passando sobre o rolo, com um arco laranja indicando a rotação.
+export const Logo=({size=22}:{size?:number})=><svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"><path d="M2.8 5.2h18.4" stroke="#0a0a0a" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="13.6" r="7.2" fill="none" stroke="#0a0a0a" strokeWidth="2.4"/><path d="M12 6.4a7.2 7.2 0 0 1 7.2 7.2" fill="none" stroke="#f1511b" strokeWidth="2.4" strokeLinecap="round"/><circle cx="12" cy="13.6" r="1.9" fill="#0a0a0a"/></svg>;
