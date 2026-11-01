@@ -180,6 +180,11 @@ for(const m of CREW)for(const epi of [0,1])for(const [k,legs] of Object.entries(
 const CLIP=sprite(['...kKKk...','.bBkKKkBb.','.bWWWWWWb.','.bWLLLLWb.','.bWWWWWWb.','.bWLLLWWb.','.bWWWWWWb.','.bWLLRLWb.','.bWWWWWWb.','.bbbbbbbb.'],{B:'#8a5a2b',b:'#5e3b1a',K:'#c3c8d0',k:'#6b7280',W:'#f4f1e6',L:'#9aa6c8',R:'#e0473b'});
 const HELMET=sprite(['...hOOO...','..hOOOOO..','.OOOOOOOO.','.OOOYYOOO.','oooooooooo'],{...PAL,Y:'#ffd23f'});
 const NUT=sprite(['..YYYY..','.YYyyYY.','YYy..yYY','YYy..yYY','.YYyyYY.','..YYYY..'],{Y:'#ffd23f',y:'#c99512'});
+// Consignação: rádio, cadeado vermelho, caixa de bloqueio e checklist da ponte (prancheta amarela).
+const RADIO=sprite(['.k....','.k....','KKKK..','KGGK..','KKKK..','KYKK..','KKYK..','KKKK..'],{K:'#24242c',k:'#9aa0ae',G:'#86efac',Y:'#4a4258'});
+const LOCK=sprite(['.cccc.','c....c','c....c','RRRRRR','RRkkRR','RRkRRR','RRRRRR'],{c:'#d4d4d8',R:'#dc2626',k:'#1b1a22'});
+const BOX=sprite(['...ccc...','..c...c..','RRRRRRRRR','RrrrrrrrR','RrrYYrrrR','RRRRRRRRR'],{c:'#9aa0ae',R:'#991b1b',r:'#dc2626',Y:'#facc15'});
+const CHK=sprite(['...kKKk...','.bBkKKkBb.','.bWWWWWWb.','.bWGLLLWb.','.bWWWWWWb.','.bWGLLWWb.','.bWWWWWWb.','.bWGLLLWb.','.bWWWWWWb.','.bbbbbbbb.'],{B:'#f2c230',b:'#a37c12',K:'#c3c8d0',k:'#6b7280',W:'#f4f1e6',L:'#9aa6c8',G:'#16a34a'});
 const REMOTE=sprite(['.k....','.k....','KKKK..','KRGK..','KYYK..','KKKK..'],{K:'#24242c',k:'#9aa0ae',R:'#ef4444',G:'#22c55e',Y:'#facc15'});
 const DIG={'0':['###','#.#','#.#','#.#','###'],'1':['.#.','##.','.#.','.#.','###'],'2':['###','..#','###','#..','###'],'3':['###','..#','.##','..#','###'],'4':['#.#','#.#','###','..#','..#']};
 function digit(ch,x,y,color){b.fillStyle=color;DIG[ch].forEach((r,j)=>[...r].forEach((c,i)=>{if(c==='#')b.fillRect(x+i,y+j,1,1)}))}
@@ -326,7 +331,7 @@ function lightLevel(){
 // ───────────────────────── Game state ─────────────────────────
 const TIPS=['Use sempre o EPI completo: capacete, óculos, luvas e botina.','Nunca fique sob carga suspensa. Mantenha distância da rota da ponte.','Respeite o isolamento das áreas quentes do forno.','Viu uma condição insegura? Pare e comunique. Você tem o direito de recusa.','Sua família espera você em casa. Trabalhe com segurança.','Antes de operar a ponte, confira o gancho, a trava e as cintas.','Caminhe pela faixa verde de pedestres sempre que possível.'];
 let state='title',paused='play',frame=0,camX=0,shake=0,best=store.get('rb1game.best',0),hero=crewById(store.get('rb1game.hero','davi')).id;
-let power=1,lightT=0,breaker=null,P,rolls,blocks,coins,items,parts,embers,toasts,log,crane,stats,inspect,boardOpen,boardTimer,doneData,emberTimer,cradle,tipTimer,tipIndex,danger;
+let power=1,lightT=0,breaker=null,radio=null,checklist=null,N=null,consigned=false,checked=false,panelLocked=false,fire=1,fireTarget=1,P,rolls,blocks,coins,items,parts,embers,toasts,log,crane,stats,inspect,boardOpen,boardTimer,doneData,emberTimer,cradle,tipTimer,tipIndex,danger;
 const SHIFT=()=>{const h=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',hourCycle:'h23'}).format(new Date()));return h>=23||h<7?'TN':h<15?'TM':'TT'};
 const nowHM=()=>new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const statusOf=d=>d<=5?'green':d<=10?'yellow':'red';
@@ -339,16 +344,17 @@ function reset(){
  // Exactly two rolls start in priority, so the cooling cradle (two slots) always has room.
  const days=shuffle([12+Math.random()*10|0,15+Math.random()*12|0,6+Math.random()*4|0,Math.random()*5|0,1+Math.random()*4|0]);
  rolls=ROLL_X.map((x,i)=>({x,i,days:days[i],diam:780+(Math.random()*90|0),inspected:false,status:statusOf(days[i]),removed:false,replaced:false,ang:Math.random()*6,variant:i?'hot':'steel'}));
- P={x:12,y:FLOOR-15,w:10,h:15,vx:0,vy:0,face:1,ground:true,coyote:0,jumpBuf:0,anim:0,board:false,epi:false,remote:false,inv:0,hearts:3,lastSafe:12,gateMsg:0};
+ P={x:12,y:FLOOR-15,w:10,h:15,vx:0,vy:0,face:1,ground:true,coyote:0,jumpBuf:0,anim:0,board:false,epi:false,remote:false,radio:false,lock:false,box:false,inv:0,hearts:3,lastSafe:12,gateMsg:0};
  blocks=BLOCKS_AT.map(([x,y],i)=>({x,y,used:false,bump:0,kind:i%2?'helmet':'coins'}));
  coins=COINS_AT.map(([x,y])=>({x,y,got:false,t:Math.random()*6}));
  items=[];parts=[];embers=[];toasts=[];log=[];cradle=[undefined,undefined];
  crane={x:300,vx:0,hook:0,load:null,swing:0,target:300,moving:false};
- stats={score:0,time:0,coins:0,epi:0,inspections:0,precise:0,swaps:0,hits:0,violations:0,aligned:0};
+ stats={score:0,time:0,coins:0,epi:0,inspections:0,precise:0,swaps:0,hits:0,violations:0,aligned:0,procs:0};
  inspect=null;boardOpen=false;boardTimer=0;doneData=null;emberTimer=120;tipTimer=900;tipIndex=0;danger=0;
  for(const k in pressed)pressed[k]=0;
  // Electricians start the shift with the plant de-energized.
  power=isElec()?0:1;lightT=0;breaker=null;
+ radio=null;checklist=null;N=null;consigned=false;checked=false;panelLocked=false;fire=1;fireTarget=1;
 }
 const ventPhase=i=>(frame+i*67)%260;
 reset();
@@ -368,6 +374,15 @@ function objective(){
  if(!P.epi)return isElec()?'Vista o EPI com luvas isolantes no armário':'Vista o EPI completo no armário';
  if(!power)return'Religue o disjuntor geral no quadro elétrico ⚡';
  if(!P.board)return'Pegue a prancheta na bancada';
+ if(!consigned){
+  if(!P.radio)return'Pegue o rádio na mesa para pedir a consignação';
+  if(!N)return`Chame o eletricista pelo rádio (${ELECS().map(m=>m.name).join(' ou ')})`;
+  if(N.phase==='coming'||N.phase==='waitLock')return!P.lock?'Pegue o cadeado na mesa':N.phase==='coming'?`${N.name} está a caminho · aguarde com o cadeado`:`Entregue o cadeado para ${N.name}`;
+  if(N.phase==='toPanel'||N.phase==='locking')return`${N.name} está consignando o forno no painel`;
+  if(N.phase==='returning')return`Aguarde ${N.name} trazer a caixa de bloqueio`;
+  return`Receba a caixa de bloqueio de ${N.name}`;
+ }
+ if(!checked)return'Preencha o checklist da ponte rolante na mesa';
  if(p){
   if(!P.remote)return'Pegue o controle remoto da ponte rolante';
   if(state!=='crane')return'Opere a ponte rolante (E) · fique fora da rota da carga';
@@ -387,12 +402,24 @@ function nearby(){
   if(!P.epi)return{label:'Quadro elétrico',fn:()=>{toast('Nunca abra o quadro sem EPI e luvas isolantes!','#ef4444');AU.sfx('bad')}};
   return{label:'Religar disjuntor geral',fn:openBreaker};
  }
+ const atTable=Math.abs(cx-(TABLE.x+TABLE.w/2))<34;
+ if(P.board&&atTable&&!consigned){
+  if(!P.radio)return{label:'Pegar rádio',fn:()=>{P.radio=true;AU.sfx('power');openRadio()}};
+  if(!N)return{label:'Chamar eletricista (rádio)',fn:openRadio};
+  if(!P.lock&&(N.phase==='coming'||N.phase==='waitLock'))return{label:'Pegar cadeado de bloqueio',fn:()=>{P.lock=true;AU.sfx('gear');toast(`Cadeado na mão. Entregue para ${N.name} consignar o forno.`,'#ef4444',200)}};
+ }
+ if(N&&Math.abs(cx-N.x)<24){
+  if(N.phase==='waitLock'||N.phase==='coming'&&Math.abs(cx-N.x)<14)return P.lock?{label:`Entregar cadeado a ${N.name}`,fn:giveLock}:{label:`${N.name} · eletricista`,fn:()=>{npcSay('Preciso do cadeado: está na mesa.');AU.sfx('select')}};
+  if(N.phase==='waitHandoff')return{label:'Receber caixa de bloqueio',fn:takeBox};
+ }
+ if(P.board&&atTable&&consigned&&!checked)return{label:'Checklist da ponte rolante',fn:openChecklist};
  if(!P.board&&Math.abs(cx-(TABLE.x+24))<20)return{label:'Pegar prancheta',fn:()=>{P.board=true;AU.sfx('power');toast('Prancheta na mão! Inspecione os 5 rolos.','#ffd23f');writeLog(`TURNO ${SHIFT()} · ${heroName().toUpperCase()}`,`Início da ronda · ${nowHM()} · EPI ok`,'#7c3aed')}};
- if(!P.remote&&P.board&&Math.abs(cx-REMOTE_POST)<12)return{label:'Pegar controle remoto',fn:()=>{if(!pending()){toast('A ponte só é usada quando houver rolo em prioridade.','#e4e4e7');AU.sfx('bad');return}P.remote=true;AU.sfx('power');toast('Controle remoto da ponte na mão. Confira o gancho e a trava!','#facc15',220)}};
+ if(!P.remote&&P.board&&Math.abs(cx-REMOTE_POST)<12)return{label:'Pegar controle remoto',fn:()=>{if(!checked){toast('Antes de usar a ponte, preencha o checklist pré-uso na mesa.','#facc15',220);AU.sfx('bad');return}if(!pending()){toast('A ponte só é usada quando houver rolo em prioridade.','#e4e4e7');AU.sfx('bad');return}P.remote=true;AU.sfx('power');toast('Controle remoto da ponte na mão. Confira o gancho e a trava!','#facc15',220)}};
  for(const r of rolls){
   if(Math.abs(cx-r.x)>16)continue;
   if(!P.board)return{label:'Precisa da prancheta',fn:()=>{toast('Pegue a prancheta na bancada primeiro','#ffd23f');AU.sfx('bad')}};
   if(r.removed)return P.remote?{label:'Operar ponte rolante',fn:enterCrane}:{label:'Posição vazia',fn:()=>{toast('Instale um rolo novo com a ponte rolante','#86a7ba');AU.sfx('select')}};
+  if(!r.inspected&&!consigned)return{label:'Forno em operação',fn:()=>{toast('Forno em operação! Consigne antes de inspecionar: rádio, cadeado e eletricista.','#ef4444',230);AU.sfx('bad')}};
   if(!r.inspected)return{label:'Inspecionar rolo '+r.i,fn:()=>openInspect(r)};
   if(r.status==='red'&&!r.replaced&&P.remote)return{label:'Operar ponte rolante',fn:enterCrane};
   if(r.status==='red'&&!r.replaced)return{label:'Rolo em prioridade',fn:()=>{toast('Pegue o controle remoto da ponte, ao lado do estoque','#ef4444');AU.sfx('bad')}};
@@ -404,7 +431,91 @@ function nearby(){
   return{label:done?'Registrar no RB1 Roll':'Terminal RB1 Roll',fn:()=>{if(!done){toast('Conclua as inspeções e as trocas antes','#e4e4e7');AU.sfx('bad');return}finish()}};
  }
  if(P.remote&&pending())return{label:'Operar ponte rolante',fn:enterCrane};
+ if(P.radio&&!N&&!consigned)return{label:'Chamar eletricista (rádio)',fn:openRadio};
  return null;
+}
+
+// ───────────────────────── Consignação do forno ─────────────────────────
+// O operador chama um eletricista pelo rádio. O eletricista age sozinho: vem até o operador, recebe o
+// cadeado, desliga os queimadores no painel, aplica cadeado e etiqueta, testa energia zero e devolve a
+// caixa de bloqueio. Só então a inspeção e a troca dos rolos são liberadas.
+const ELECS=()=>CREW.filter(c=>c.role==='elec'&&c.id!==hero);
+function openRadio(){for(const k in pressed)pressed[k]=0;state='radio';radio={pick:0,phase:'pick',t:0};AU.sfx('beep')}
+function callElectrician(m){
+ radio.phase='talk';radio.t=0;radio.who=m;AU.sfx('beep');
+ N={id:m.id,name:m.name,x:-14,face:1,anim:0,moving:false,phase:'coming',t:0,hasLock:false,say:'',sayT:0};
+ stats.procs++;addScore(50);
+ writeLog('RÁDIO · ELÉTRICA',`Consignação solicitada a ${m.name} · ${nowHM()}`,'#60a5fa');
+}
+function updateRadio(){
+ const k=radio;k.t++;
+ if(k.phase==='pick'){
+  const list=ELECS();
+  if(take('left')||take('jump'))k.pick=(k.pick+list.length-1)%list.length;
+  if(take('right')||take('down'))k.pick=(k.pick+1)%list.length;
+  if(take('act'))callElectrician(list[k.pick]);
+  else if(take('exit')||take('pause')){state='play';radio=null}
+ }else if(k.t>150||(k.t>70&&(take('act')||take('exit')))){state='play';radio=null;toast(`${N.name} está a caminho. Pegue o cadeado na mesa.`,'#60a5fa',220)}
+}
+function npcSay(text,t=190){if(N){N.say=text;N.sayT=t}}
+function giveLock(){
+ P.lock=false;N.hasLock=true;N.phase='toPanel';stats.procs++;addScore(50,N.x,P.y-12);AU.sfx('gear');
+ npcSay('Obrigado! Vou consignar o forno no painel.');
+}
+function takeBox(){
+ N.phase='standby';P.box=true;consigned=true;stats.procs++;addScore(150,P.x+5,P.y-10);AU.sfx('power');
+ writeLog('FORNO CONSIGNADO',`${N.name} · queimadores bloqueados · ${nowHM()}`,'#ef4444');
+ toast('Forno consignado com segurança! Agora o checklist da ponte rolante na mesa.','#22c55e',240);
+ npcSay('Caixa entregue. Fico aqui no painel até a liberação.');
+}
+function npcWalk(tx){
+ const dx=tx-N.x;if(Math.abs(dx)<1.4){N.moving=false;return true}
+ N.face=dx>0?1:-1;N.x+=N.face*Math.min(1.3,Math.abs(dx));N.moving=true;N.anim+=.16;return false;
+}
+function besidePlayer(){return N.x<P.x?P.x-14:P.x+P.w+4}
+function updateNpc(){
+ if(!N)return;
+ if(N.sayT>0)N.sayT--;
+ const near=Math.abs(N.x-(P.x+P.w/2))<18;
+ switch(N.phase){
+  case'coming':
+   if(npcWalk(besidePlayer())||near){N.phase='waitLock';N.moving=false;N.face=N.x<P.x?1:-1;npcSay(P.lock?'Cheguei! Me passa o cadeado para consignar.':'Cheguei! Pegue o cadeado na mesa para eu consignar.');AU.sfx('select')}
+   break;
+  case'waitLock':case'waitHandoff':
+   if(Math.abs(N.x-(P.x+P.w/2))>34)npcWalk(besidePlayer());else{N.moving=false;N.face=N.x<P.x?1:-1}
+   break;
+  case'toPanel':
+   if(npcWalk(PANEL.x+PANEL.w+5)){N.phase='locking';N.t=0;N.face=-1}
+   break;
+  case'locking':
+   N.t++;
+   if(N.t===20){npcSay('Desligando os queimadores do forno…');fireTarget=0;AU.sfx('clank')}
+   if(N.t===120){panelLocked=true;N.hasLock=false;AU.sfx('clank');shake=2;npcSay('Cadeado e etiqueta aplicados no painel.')}
+   if(N.t===200){AU.sfx('beep');npcSay('Teste de partida: energia zero confirmada.')}
+   if(N.t>=280){N.phase='returning';npcSay('Levando a caixa de bloqueio ao operador.')}
+   break;
+  case'returning':
+   if(npcWalk(besidePlayer())||near){N.phase='waitHandoff';N.moving=false;N.face=N.x<P.x?1:-1;npcSay('Forno consignado. Aqui está a caixa de bloqueio.');AU.sfx('select')}
+   break;
+  case'standby':
+   if(npcWalk(PANEL.x+PANEL.w+5))N.face=-1;
+   break;
+ }
+}
+// Checklist pré-uso da ponte rolante, na prancheta amarela sobre a mesa.
+const CHECKS=[['Cabos de aço OK?','Sem fios rompidos, amassados ou corrosão'],['Moitão e gancho OK?','Trava de segurança e gancho sem trincas'],['Controle remoto OK?','Botões, parada de emergência e bateria'],['Carrinho e trilhos OK?','Rodas, batentes e fim de curso livres']];
+function openChecklist(){for(const k in pressed)pressed[k]=0;state='checklist';checklist={marks:CHECKS.map(()=>false),t:0,signed:0};AU.sfx('select')}
+function markNext(i){const k=checklist;if(k.signed)return;const j=i??k.marks.indexOf(false);if(j<0){signChecklist();return}k.marks[j]=true;AU.sfx('write')}
+function signChecklist(){
+ const k=checklist;if(k.signed||k.marks.includes(false))return;
+ k.signed=1;checked=true;stats.procs++;addScore(150);AU.sfx('good');
+ writeLog('CHECKLIST · PONTE ROLANTE','Cabos, moitão, controle e carrinho OK · '+nowHM(),'#facc15');
+}
+function updateChecklist(){
+ const k=checklist;k.t++;
+ if(k.signed){k.signed++;if(k.signed>70){state='play';checklist=null;toast('Checklist assinado! Agora inspecione os rolos com o forno consignado.','#22c55e',230)}return}
+ if(take('act')||take('jump'))markNext();
+ else if(take('exit')||take('pause')){state='play';checklist=null}
 }
 
 // ───────────────────────── Inspection mini-game ─────────────────────────
@@ -528,6 +639,7 @@ function finish(){
  if(safety<70&&(rank==='S'||rank==='A'))rank='B';
  doneData={secs,bonus,rank,safety};
  if(stats.score>best){best=stats.score;store.set('rb1game.best',best)}
+ if(N){writeLog('FORNO LIBERADO',`${N.name} retirou cadeado e etiqueta · ${nowHM()}`,'#22c55e');panelLocked=false;fireTarget=1;P.box=false}
  writeLog('REGISTRADO NO RB1 ROLL',`${stats.swaps} trocas · ${stats.inspections} inspeções`,'#22c55e');
  state='done';AU.stopMusic();AU.sfx('win');
  burst(P.x,P.y,['#f1511b','#7c3aed','#ffd23f','#22c55e'],40,3,.06,80);
@@ -591,7 +703,7 @@ function updatePlay(){
  if(P.epi&&--tipTimer<=0){tipTimer=1500;toast('Dica de segurança: '+TIPS[tipIndex++%TIPS.length],'#60a5fa',300)}
 }
 function updateHazards(){
- if(--emberTimer<=0){emberTimer=55+Math.random()*50|0;const x=FURN.x+30+Math.random()*(FURN.w-60);embers.push({x,y:FURN.y+18,vx:(Math.random()-.5)*.3,vy:0,warn:45})}
+ if(fire>.5&&--emberTimer<=0){emberTimer=55+Math.random()*50|0;const x=FURN.x+30+Math.random()*(FURN.w-60);embers.push({x,y:FURN.y+18,vx:(Math.random()-.5)*.3,vy:0,warn:45})}
  for(const e of embers){
   if(e.warn>0){e.warn--;continue}
   e.vy=Math.min(2.4,e.vy+.06);e.x+=e.vx;e.y+=e.vy;
@@ -616,6 +728,8 @@ function updateCommon(){
  frame++;
  if(state!=='crane'){crane.x+=(crane.target-crane.x)*.02;crane.swing*=.95;if(state==='play'&&power&&frame%400===0&&!crane.load&&!P.remote)crane.target=CRANE_MIN+Math.random()*(CRANE_MAX-CRANE_MIN)}
  for(const r of rolls)if(!r.removed)r.ang+=.045;
+ fire+=Math.sign(fireTarget-fire)*Math.min(.008,Math.abs(fireTarget-fire));
+ if(state==='play'||state==='crane'||state==='inspect'||state==='checklist')updateNpc();
  if(lightT>0&&lightT<90)lightT++;
  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.life--}
  parts=parts.filter(p=>p.life>0);
@@ -649,16 +763,25 @@ function renderWorld(){
   if(x<cx-4||x>cx+VW+4)continue;
   const base=(x-WIN.x)%24,dist=Math.min(base,24-base);
   const n=Math.sin(x*.09+t*3.1)*.5+Math.sin(x*.023-t*1.7)*.35+Math.sin(x*.21+t*7)*.15;
-  const hgt=Math.max(3,26+n*8-dist*1.4);
+  const hgt=Math.max(3,26+n*8-dist*1.4)*fire;if(hgt<2)continue;
   for(let y=0;y<hgt;y+=2){const k=y/hgt;if(k>.8&&((x*7+y*3+frame)>>2)%3===0)continue;b.fillStyle=k<.2?'#fff4c2':k<.42?'#ffc94a':k<.7?'#ff8a2a':'#d9461b';b.fillRect(x,fy-y-6,2,2)}
  }
- for(let x=WIN.x+12;x<WIN.x+WIN.w;x+=24){if(PILLARS.some(p=>Math.abs(p-x)<8))continue;rect(b,'#3a3348',x-4,fy-4,8,4);rect(b,'#ffe2a2',x-2,fy-5,4,1)}
+ if(fire<1){b.globalAlpha=(1-fire)*.75;rect(b,'#0b0809',WIN.x,WIN.y,WIN.w,WIN.h);b.globalAlpha=1}
+ for(let x=WIN.x+12;x<WIN.x+WIN.w;x+=24){if(PILLARS.some(p=>Math.abs(p-x)<8))continue;rect(b,'#3a3348',x-4,fy-4,8,4);rect(b,fire>.3?'#ffe2a2':'#4a4258',x-2,fy-5,4,1)}
  for(const x of PILLARS){rect(b,'#2e2938',x-4,WIN.y,8,WIN.h);rect(b,'#433b52',x-4,WIN.y,1,WIN.h);rect(b,'#1d1925',x+3,WIN.y,1,WIN.h)}
  b.restore();
  // Rack stock (always replenished), remote on its post, clipboard on the table.
  for(const [x,y] of [[RACK_SLOTS[0],RACK_Y],[RACK_SLOTS[1],RACK_Y],[RACK.x+33,171]])drawRoll(b,x,y,'fresh',0);
  if(!P.remote&&state!=='crane'){b.drawImage(REMOTE,REMOTE_POST-3,130);if(pending()&&P.board&&(frame>>4)%2)rect(b,'#ffd23f',REMOTE_POST,124,2,2)}
- if(!P.board){b.drawImage(CLIP,TABLE.x+20,TABLE.y-10);if(P.epi&&(frame>>4)%2)rect(b,'#ffd23f',TABLE.x+24,TABLE.y-16,2,2)}
+ const blink=(frame>>4)%2&&state==='play';
+ if(!P.radio){b.drawImage(RADIO,TABLE.x+4,TABLE.y-8);if(blink&&P.board&&!consigned)rect(b,'#ffd23f',TABLE.x+5,TABLE.y-14,2,2)}
+ if(!P.lock&&!(N&&(N.hasLock||panelLocked))){b.drawImage(LOCK,TABLE.x+13,TABLE.y-7);if(blink&&N&&(N.phase==='coming'||N.phase==='waitLock'))rect(b,'#ffd23f',TABLE.x+15,TABLE.y-13,2,2)}
+ if(!P.board){b.drawImage(CLIP,TABLE.x+22,TABLE.y-10);if(P.epi&&blink)rect(b,'#ffd23f',TABLE.x+26,TABLE.y-16,2,2)}
+ b.drawImage(CHK,TABLE.x+38,TABLE.y-10);if(checked)rect(b,'#16a34a',TABLE.x+45,TABLE.y-11,3,3);else if(blink&&consigned)rect(b,'#ffd23f',TABLE.x+42,TABLE.y-16,2,2);
+ if(panelLocked){
+  const px=PANEL.x+PANEL.w/2;b.drawImage(LOCK,px-3,146);rect(b,'#dc2626',px-3,154,6,9);rect(b,'#fff',px-2,156,4,1);rect(b,'#fff',px-2,158,4,1);rect(b,'#1b1a22',px,153,1,2);
+  rect(b,(frame>>4)%2?'#ef4444':'#7f1d1d',PANEL.x+PANEL.w-7,140,3,3);
+ }
  if(!P.epi&&state!=='title'&&state!=='brief'&&(frame>>4)%2)rect(b,'#60a5fa',LOCKER.x+14,102,2,2);
  rect(b,power?'#22c55e':((frame>>3)%2?'#ef4444':'#5a1a1a'),PANEL.x+4,135,3,3);rect(b,power?'#14532d':'#22c55e',PANEL.x+PANEL.w-7,135,3,3);
  if(!power&&P.epi&&state==='play'&&(frame>>4)%2)rect(b,'#facc15',PANEL.x+PANEL.w/2-1,100,3,3);
@@ -714,6 +837,16 @@ function renderWorld(){
  for(const e of embers){if(e.warn>0){if((e.warn>>2)%2)rect(b,'#ffd23f',Math.round(e.x)-1,FLOOR-3,3,1);rect(b,'#ff9b3d',Math.round(e.x)-1,e.y,3,2)}else{rect(b,'#ffe2a2',Math.round(e.x)-1,Math.round(e.y)-1,3,3);rect(b,'#ff6a1a',Math.round(e.x)-2,Math.round(e.y),5,1)}}
  for(const p of parts){if(p.text)continue;b.globalAlpha=p.smoke?Math.min(.5,p.life/p.max):Math.min(1,p.life/(p.max*.5));rect(b,p.c,Math.round(p.x),Math.round(p.y),p.s||1,p.s||1)}
  b.globalAlpha=1;
+ // Eletricista chamado pelo rádio.
+ if(N&&state!=='title'&&state!=='brief'){
+  const fr=HERO[N.id+'1'+(N.moving?((N.anim|0)%2?'walkA':'walkB'):'idle')];
+  const nx=Math.round(N.x-5);
+  rect(b,'rgba(0,0,0,.35)',nx+1,FLOOR,P.w,1);
+  b.drawImage(N.face>0?fr.r:fr.l,nx,FLOOR-16);
+  if(N.hasLock)b.drawImage(LOCK,N.face>0?nx+10:nx-4,FLOOR-9);
+  if(N.phase==='returning'||N.phase==='waitHandoff')b.drawImage(BOX,N.face>0?nx+9:nx-7,FLOOR-8);
+  if(N.phase==='locking'&&N.t>20&&N.t<200&&(frame>>3)%2)rect(b,'#facc15',PANEL.x+PANEL.w/2-1,140,3,3);
+ }
  // Hero.
  if(state!=='title'&&state!=='brief'){
   const moving=Math.abs(P.vx)>.2;
@@ -722,11 +855,15 @@ function renderWorld(){
   const img=blink?(P.face>0?fr.fr:fr.fl):(P.face>0?fr.r:fr.l);
   rect(b,'rgba(0,0,0,.35)',Math.round(P.x),FLOOR,P.w,1);
   b.drawImage(img,Math.round(P.x-1),Math.round(P.y-1));
+  // Caixa de bloqueio presa ao cinto enquanto o forno estiver consignado.
+  if(P.box){rect(b,'#991b1b',Math.round(P.x+(P.face>0?0:6)),Math.round(P.y+9),5,4);rect(b,'#facc15',Math.round(P.x+(P.face>0?1:7)),Math.round(P.y+10),2,1)}
   if(state==='crane'||P.remote)b.drawImage(REMOTE,Math.round(P.face>0?P.x+8:P.x-4),Math.round(P.y+5));
+  else if(P.lock)b.drawImage(LOCK,Math.round(P.face>0?P.x+9:P.x-5),Math.round(P.y+7));
+  else if(radio||(P.radio&&!N&&!consigned))b.drawImage(RADIO,0,0,6,8,Math.round(P.face>0?P.x+8:P.x-4),Math.round(P.y+5),5,7);
   else if(P.board)b.drawImage(CLIP,0,0,10,10,Math.round(P.face>0?P.x+7:P.x-6),Math.round(P.y+7),6,6);
   if(state==='crane'&&danger&&(frame>>2)%2){rect(b,'#ef4444',Math.round(P.x)+3,Math.round(P.y)-9,3,6);rect(b,'#ef4444',Math.round(P.x)+3,Math.round(P.y)-2,3,2)}
  }
- b.globalAlpha=.16+Math.sin(frame/7)*.03;b.fillStyle='#ff7a2a';b.fillRect(FURN.x,FLOOR-2,FURN.w,4);b.globalAlpha=.07;b.fillRect(FURN.x,FLOOR+2,FURN.w,10);b.globalAlpha=1;
+ b.globalAlpha=(.16+Math.sin(frame/7)*.03)*fire;b.fillStyle='#ff7a2a';b.fillRect(FURN.x,FLOOR-2,FURN.w,4);b.globalAlpha=.07*fire;b.fillRect(FURN.x,FLOOR+2,FURN.w,10);b.globalAlpha=1;
  b.setTransform(1,0,0,1,0,0);
  const lv=lightLevel();
  if(lv<1){
@@ -886,7 +1023,7 @@ function titleUI(){
  txt('RB1 ROLL · APRESENTA',VW/2,12,5.5,'#a78bfa','center');
  shadowText('A MISSÃO DO FORNO',VW/2,24,13,'#fff','center');
  ctx.fillStyle='#f1511b';ctx.fillRect(VW/2+109,34,4,4);
- txt('Inspecione os rolos, troque os que estão em prioridade com a ponte rolante e volte para casa em segurança.',VW/2,43,6,'#d4d4d8','center',SANS,500,VW-40);
+ txt('Consigne o forno, inspecione os rolos, troque os que estão em prioridade com a ponte e volte para casa em segurança.',VW/2,43,6,'#d4d4d8','center',SANS,500,VW-40);
  txt('ESCOLHA SEU PERSONAGEM',VW/2,56,4.8,'#9a9aa2','center');
  const x0=(VW-4*82-3*6)/2;
  CREW.forEach((m,i)=>heroCard(m,x0+(i%4)*88,66+(i/4|0)*53,hero===m.id));
@@ -902,7 +1039,7 @@ function briefUI(){
  rr(x+14,y+12,22,22,5,'#16a34a');ctx.strokeStyle='#fff';ctx.lineWidth=1.6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+19,y+23);ctx.lineTo(x+23,y+27);ctx.lineTo(x+31,y+18);ctx.stroke();
  txt('DIÁLOGO DE SEGURANÇA',x+42,y+13,4.8,'#22c55e');
  txt(`Bom turno, ${heroName()}! Antes de começar:`,x+42,y+22,8,'#fff','left',SANS,800,w-56);
- const rules=[['#2563eb','EPI completo, sempre','Capacete, óculos, luvas e botina. Sem EPI, sem acesso à área do forno.'],['#ef4444','Nunca sob carga suspensa','Ao operar a ponte rolante, fique fora da rota e da área marcada em vermelho.'],['#f1511b','Respeite as áreas quentes','Fagulhas e vapor: observe os avisos e mantenha distância segura.'],isElec()?['#facc15','Energização segura (NR-10)','Sem energia na planta: luvas isolantes, avise a área e só então ligue o disjuntor geral.']:['#facc15','Pare e comunique','Condição insegura? Você tem o direito de recusa. Nenhuma tarefa vale um acidente.']];
+ const rules=[['#2563eb','EPI completo, sempre','Capacete, óculos, luvas e botina. Sem EPI, sem acesso à área do forno.'],['#ef4444','Consigne antes de intervir','Rádio, cadeado e eletricista: sem forno consignado, sem inspeção e sem troca.'],['#f1511b','Checklist e carga suspensa','Checklist pré-uso da ponte e nunca fique sob a carga ou na rota dela.'],isElec()?['#facc15','Energização segura (NR-10)','Sem energia na planta: luvas isolantes, avise a área e só então ligue o disjuntor geral.']:['#facc15','Pare e comunique','Condição insegura? Você tem o direito de recusa. Nenhuma tarefa vale um acidente.']];
  rules.forEach(([c,t,d],i)=>{const yy=y+42+i*28;rr(x+14,yy,w-28,24,4,'rgba(255,255,255,.04)','rgba(255,255,255,.08)');rr(x+19,yy+5,14,14,4,c);txt(String(i+1),x+26,yy+8.5,5.5,'#fff','center');txt(t,x+40,yy+4,6.6,'#fff','left',SANS,800);txt(d,x+40,yy+13,5.2,'#a1a1aa','left',SANS,500,w-62)});
  txt('Sua vida e a dos colegas vêm antes de qualquer meta.',x+w/2,y+158,6,'#e4e4e7','center',SANS,700);
  button('ENTENDI · COMEÇAR O TURNO',x+w/2-84,y+172,168,17,startPlay,true);
@@ -933,6 +1070,78 @@ function breakerUI(){
  rr(x+102,y+138,w-116,18,4,k.step===3?'#22c55e':'#f1511b');txt(label,x+102+(w-116)/2,y+144,5.4,'#fff','center');
  txt('Q · cancelar',x+w-14,y+h-10,5,'#6b6b74','right',SANS,500);
 }
+function npcUI(){
+ if(!N||state==='title'||state==='brief')return;
+ const x=Math.round(N.x-camX);if(x<-40||x>VW+40)return;
+ txt(N.name.toUpperCase()+' · ELETRICISTA',x,FLOOR-25,3.6,'#60a5fa','center');
+ if(N.sayT>0){
+  ctx.globalAlpha=Math.min(1,N.sayT/15);
+  ctx.font=`700 5.6px ${SANS}`;const w=Math.min(170,ctx.measureText(N.say).width+12),bx=Math.max(4,Math.min(VW-w-4,x-w/2)),by=FLOOR-64;
+  rr(bx,by,w,13,4,'#ffffff');ctx.beginPath();ctx.moveTo(x-3,by+13);ctx.lineTo(x+3,by+13);ctx.lineTo(x,by+18);ctx.fillStyle='#fff';ctx.fill();
+  txt(N.say,bx+6,by+3.6,5.6,'#111827','left',SANS,700,w-12);ctx.globalAlpha=1;
+ }
+}
+function radioUI(){
+ const k=radio;
+ ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);
+ const x=70,y=30,w=260,h=160;panel(x,y,w,h);
+ // Rádio portátil.
+ rr(x+16,y+38,40,96,6,'#1b1a22','#3a3446');rr(x+22,y+22,4,18,2,'#3a3446');
+ rr(x+21,y+46,30,20,3,k.phase==='talk'?'#14532d':'#0f2a1a');
+ txt('CH 03',x+36,y+50,4.2,'#86efac','center');txt(k.phase==='talk'?'TX ●':'MANUT.',x+36,y+58,4,'#86efac','center');
+ for(let i=0;i<4;i++)for(let j=0;j<3;j++)rr(x+22+j*10,y+74+i*12,8,8,2,'#2a2a30');
+ rr(x+22,y+122,30,6,2,k.phase==='talk'&&(frame>>3)%2?'#ef4444':'#7f1d1d');
+ txt('RÁDIO · CANAL DE MANUTENÇÃO ELÉTRICA',x+68,y+12,4.4,'#60a5fa');
+ txt('Solicitar consignação do forno',x+68,y+21,8,'#fff','left',SANS,800,w-80);
+ if(k.phase==='pick'){
+  txt('Chame um eletricista. Ele vem até você, recebe o cadeado e consigna o forno no painel.',x+68,y+36,5.4,'#a1a1aa','left',SANS,500,w-80);
+  ELECS().forEach((m,i)=>{
+   const cx=x+68+i*92,cy=y+56,sel=k.pick===i;
+   rr(cx,cy,86,58,6,sel?'rgba(37,99,235,.2)':'rgba(255,255,255,.05)',sel?'#60a5fa':'rgba(255,255,255,.15)');
+   ctx.imageSmoothingEnabled=false;ctx.drawImage(HERO[m.id+'1idle'].r,cx+8,cy+10,24,32);
+   txt(m.name,cx+36,cy+14,7,'#fff','left',SANS,800);txt('Eletricista',cx+36,cy+24,5,'#60a5fa','left',SANS,700);txt('NR-10',cx+36,cy+32,4.6,'#6b6b74','left',SANS,600);
+   buttons.push({x:cx,y:cy,w:86,h:58,fn:()=>{if(k.pick===i)callElectrician(m);else k.pick=i}});
+  });
+  button('CHAMAR NO RÁDIO',x+68,y+124,130,16,()=>callElectrician(ELECS()[k.pick]),true);
+  txt('Q · cancelar',x+w-14,y+h-12,5,'#6b6b74','right',SANS,500);
+ }else{
+  const m=k.who,l1=`${heroName()}: Elétrica, aqui é ${heroName()} do RB1. Solicito consignação do forno para troca de rolo.`,l2=`${m.name}: Copiado, ${heroName()}! Estou a caminho. Separe o cadeado.`;
+  const n1=Math.ceil(k.t*1.4),n2=Math.max(0,Math.ceil((k.t-60)*1.4));
+  rr(x+68,y+40,w-80,30,5,'rgba(241,81,27,.12)','rgba(241,81,27,.5)');txt(l1.slice(0,n1),x+74,y+45,5.6,'#fde3d6','left',SANS,600,w-92);
+  if(k.t>60){rr(x+68,y+78,w-80,30,5,'rgba(37,99,235,.14)','rgba(96,165,250,.6)');txt(l2.slice(0,n2),x+74,y+83,5.6,'#dbeafe','left',SANS,600,w-92)}
+  if(k.t>70)txt('E · continuar',x+w-14,y+h-12,5,'#9a9aa2','right',SANS,600);
+ }
+}
+function checklistUI(){
+ const k=checklist;
+ ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);
+ // Prancheta amarela sobre a mesa.
+ const x=96,y=12,w=208,h=202;
+ rr(x,y,w,h,8,'#c9a227');rr(x+1,y+1,w-2,h-2,7,null,'#8a6d12');
+ rr(x+8,y+12,w-16,h-20,3,'#f8f6ef');
+ rr(x+w/2-22,y-3,44,13,4,'#d4d4d8','#6b7280');rr(x+w/2-10,y+1,20,4,2,'#6b7280');
+ txt('CHECKLIST PRÉ-USO',x+16,y+20,4.8,'#a16207');
+ txt('Ponte rolante · controle remoto',x+16,y+28,8,'#111827','left',SANS,800,w-32);
+ txt(`${heroName()} · Turno ${SHIFT()} · ${nowHM()}`,x+16,y+39,5,'#6b7280','left',SANS,600);
+ const cur=k.marks.indexOf(false);
+ CHECKS.forEach(([q,d],i)=>{
+  const yy=y+52+i*27,ok=k.marks[i],isCur=i===cur&&!k.signed;
+  rr(x+14,yy,w-28,23,4,isCur?'rgba(250,204,21,.18)':'rgba(0,0,0,.03)',isCur?'#d4a514':'rgba(0,0,0,.08)');
+  txt(q,x+20,yy+4,6.4,'#111827','left',SANS,800,w-80);txt(d,x+20,yy+13,4.8,'#6b7280','left',SANS,500,w-80);
+  const bx=x+w-42;
+  rr(bx,yy+5,13,13,2,ok?'#16a34a':'#fff',ok?'#15803d':'#9ca3af');
+  if(ok){ctx.strokeStyle='#fff';ctx.lineWidth=1.6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(bx+3,yy+11.5);ctx.lineTo(bx+5.5,yy+14);ctx.lineTo(bx+10,yy+8);ctx.stroke()}
+  txt(ok?'OK':'?',bx+20,yy+8,5,ok?'#16a34a':'#9ca3af','center');
+  buttons.push({x:x+14,y:yy,w:w-28,h:23,fn:()=>{if(!k.marks[i])markNext(i)}});
+ });
+ const sy=y+h-36;
+ ctx.strokeStyle='#9ca3af';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(x+20,sy+12);ctx.lineTo(x+110,sy+12);ctx.stroke();
+ txt('Assinatura do operador',x+20,sy+15,4.4,'#6b7280','left',SANS,600);
+ if(k.signed)txt(heroName(),x+24,sy+1,9,'#1e3a8a','left','"Segoe Script","Brush Script MT",cursive','italic 700');
+ if(k.signed)txt('LIBERADO PARA USO',x+w-18,sy+4,4.6,'#16a34a','right');
+ else if(cur<0)button('ASSINAR',x+w-80,sy-2,64,15,signChecklist,true);
+ else txt('E · conferir item  ·  Q sair',x+w-18,sy+5,4.8,'#6b7280','right',SANS,600);
+}
 function pauseUI(){
  ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);
  panel(VW/2-90,52,180,124);
@@ -950,7 +1159,7 @@ function doneUI(){
  txt('Turno registrado no RB1 Roll',x+16,y+21,10,'#fff','left',SANS,800);
  rr(x+w-58,y+10,42,42,8,'#f1511b');txt(doneData.rank,x+w-37,y+19,20,'#fff','center');txt('NOTA',x+w-37,y+43,4.5,'#ffe2a2','center');
  if(stats.score>=best)txt('RECORDE!',x+w-37,y+56,4.6,'#ffd23f','center');
- const st=[['Pontuação',fmt(stats.score)],['Tempo',`${doneData.secs/60|0}min ${doneData.secs%60}s`],['Segurança',doneData.safety+'%'],['Inspeções precisas',`${stats.precise}/${stats.inspections}`],['Trocas com a ponte',String(stats.swaps)],['Infrações',String(stats.violations)]];
+ const st=[['Pontuação',fmt(stats.score)],['Consignação e checklist',`${stats.procs}/4`],['Segurança',doneData.safety+'%'],['Inspeções precisas',`${stats.precise}/${stats.inspections}`],['Trocas com a ponte',String(stats.swaps)],['Infrações',String(stats.violations)]];
  st.forEach(([k,v],i)=>{const cx=x+16+(i%3)*84,cy=y+40+(i/3|0)*22;txt(k,cx,cy,5.4,'#9a9aa2','left',SANS,500);txt(v,cx,cy+7.5,8,k==='Segurança'?(safe?'#22c55e':'#facc15'):k==='Infrações'&&stats.violations?'#ef4444':'#fff','left',SANS,800)});
  const ty=y+88;txt('CONDIÇÃO FINAL DOS ROLOS',x+16,ty,4.8,'#a78bfa');
  rolls.forEach((r,i)=>{const cx=x+16+i*60,cy=ty+9;const [label,col]=STATUS[r.status];rr(cx,cy,56,34,4,'rgba(255,255,255,.04)','rgba(255,255,255,.1)');ctx.beginPath();ctx.arc(cx+9,cy+9,5,0,Math.PI*2);ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.stroke();txt(String(r.i),cx+9,cy+6.5,5,col,'center');txt(r.days+' d',cx+50,cy+6,6.5,'#fff','right',SANS,800);txt(label,cx+6,cy+18,4.2,col);txt(r.replaced?'rolo trocado':'mantido',cx+6,cy+25,5,'#9a9aa2','left',SANS,500)});
@@ -976,6 +1185,8 @@ function step(){
  else if(state==='crane'){updateCrane();if(state==='crane'||state==='play'){physics(false);updateHazards()}}
  else if(state==='inspect')updateInspect();
  else if(state==='breaker')updateBreaker();
+ else if(state==='radio')updateRadio();
+ else if(state==='checklist')updateChecklist();
  else if(state==='pause'){if(take('pause')||take('act'))state=paused;if(take('restart'))beginShift()}
  else if(state==='done'){if(take('restart'))beginShift();if(take('act'))enterPanel()}
  if((state==='play'||state==='crane')&&take('restart'))beginShift();
@@ -991,17 +1202,19 @@ function loop(now){
  if(state==='title')titleUI();
  else if(state==='brief')briefUI();
  else{
-  hud();prompt();board();
+  hud();npcUI();prompt();board();
   if(state==='crane')remoteUI();
   toastsUI();
   if(state==='inspect')inspectUI();
   if(state==='breaker')breakerUI();
+  if(state==='radio')radioUI();
+  if(state==='checklist')checklistUI();
   if(state==='pause')pauseUI();
   if(state==='done')doneUI();
  }
  requestAnimationFrame(loop);
 }
 // Read-only hook for automated checks.
-window.__rb1={get power(){return power},get hero(){return hero},get state(){return state},get P(){return P},get rolls(){return rolls},get stats(){return stats},get crane(){return crane},get cradle(){return cradle}};
+window.__rb1={get consigned(){return consigned},get checked(){return checked},get npc(){return N},get fire(){return fire},get power(){return power},get hero(){return hero},get state(){return state},get P(){return P},get rolls(){return rolls},get stats(){return stats},get crane(){return crane},get cradle(){return cradle}};
 (document.fonts?document.fonts.ready:Promise.resolve()).then(()=>requestAnimationFrame(loop));
 })();
