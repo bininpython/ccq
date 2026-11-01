@@ -34,7 +34,7 @@ function Chrome({n,label,dark}:{n:number;label:string;dark?:boolean}){
 const Tag=({n,children}:{n:string;children:ReactNode})=><span className="s-tag rv" style={d(0)}><b>{n}</b>{children}</span>;
 
 // Folha de controle preenchida à mão: cada linha é "escrita" enquanto a mão com a caneta acompanha o traço.
-const NOTE:[string,ReactNode][]=[['Data','12/03'],['Hora','02:40'],['Rolo','pos. 2'],['Diâm.','812 mm'],['Perím.',<><s>2.510</s> 2.551 mm</>],['Turno','TN'],['Obs.','desgaste? trocar']];
+const NOTE:[string,ReactNode][]=[['Data','12/03'],['Hora','02:40'],['Rolo','pos. 2'],['Diâm.','812 mm'],['Perím.','2.551 mm'],['Turno',<><s>TM</s> TN</>],['Obs.','desgaste? trocar']];
 function PaperNote({on}:{on:boolean}){
  const paper=useRef<HTMLDivElement>(null),hand=useRef<HTMLDivElement>(null);
  useEffect(()=>{
@@ -71,21 +71,15 @@ function PaperNote({on}:{on:boolean}){
     <span className="pn-form">CONTROLE DE TROCA · ROLOS DO FORNO</span>
     <span className="pn-stain" aria-hidden="true"/>
     {NOTE.map(([k,v])=><div className="pn-line" key={k}><span className="pn-ink">{k}: <b>{v}</b></span></div>)}
-    <div className="pn-hand" ref={hand} aria-hidden="true"><svg viewBox="-10 -190 330 330" width="330" height="330">
-     <ellipse cx="120" cy="40" rx="120" ry="42" fill="#0a0a0a" opacity=".12" transform="rotate(-28 120 40)"/>
-     <g className="pn-wiggle">
-      <path d="M108 30 L166 -32 L332 120 L274 182 Z" fill="#3f3f46"/>
-      <path d="M146 -9 L306 146" stroke="#f1511b" strokeWidth="12"/><path d="M156 -20 L316 135" stroke="#e4e4e7" strokeWidth="4" opacity=".7"/>
-      <path d="M108 30 L166 -32" stroke="#27272a" strokeWidth="18" strokeLinecap="round"/>
-      <ellipse cx="104" cy="-30" rx="60" ry="46" fill="#d9a07a" transform="rotate(-38 104 -30)"/>
-      <ellipse cx="66" cy="2" rx="24" ry="15" fill="#c88a63" transform="rotate(-20 66 2)"/>
-      <path d="M70 -6 Q44 -14 36 -38" stroke="#e3ad88" strokeWidth="17" strokeLinecap="round" fill="none"/>
-      <line x1="14" y1="-17" x2="150" y2="-178" stroke="#18181b" strokeWidth="11" strokeLinecap="round"/>
-      <line x1="122" y1="-145" x2="136" y2="-161" stroke="#f1511b" strokeWidth="12"/>
-      <path d="M0 0 L8 -21 L20 -11 Z" fill="#a1a1aa"/><circle cx="1" cy="-1" r="2.4" fill="#1e3a8a"/>
-      <path d="M86 -84 Q56 -70 30 -34" stroke="#d9a07a" strokeWidth="19" strokeLinecap="round" fill="none"/>
-      <ellipse cx="32" cy="-37" rx="6" ry="4.5" fill="#f2c7a8" transform="rotate(-50 32 -37)"/>
-      <path d="M96 -58 Q108 -66 122 -60" stroke="#c88a63" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55"/>
+    <div className="pn-hand" ref={hand} aria-hidden="true"><svg viewBox="-60 -260 460 360" width="460" height="360">
+     {/* Mão: Fluent Emoji "Writing hand" (Flat), © Microsoft Corporation, licença MIT (licenses/fluentui-emoji-MIT.txt). Manga do uniforme adicionada. */}
+     <defs><filter id="pn-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation=".9"/></filter></defs>
+     <g transform="translate(-34.1 -224.2) scale(7.5)">
+      <g transform="translate(1.6 2.4)" opacity=".2" filter="url(#pn-blur)"><path d="M29.30,16.30 L29.30,30.30 L72.41,59.38 L72.41,45.38Z" fill="#000"/><path d="M9.99487 15.5826C9.99487 14.2026 11.1149 13.0826 12.4949 13.0826C13.8749 13.0826 14.9949 14.2026 14.9949 15.5826V24.0027H21.9449V20.0027H29.9849V28.7627C29.9849 29.4427 29.4349 30.0027 28.7449 30.0027H19.5049C17.0149 30.0027 14.9949 27.9827 14.9949 25.4927V27.5026C14.9949 28.8826 13.8749 30.0026 12.4949 30.0026C11.1149 30.0026 9.99487 28.8826 9.99487 27.5026V15.5826Z" fill="#000"/><path d="M13.0449 9.65265L28.8949 16.5326C29.5649 16.8226 29.9949 17.4726 29.9949 18.2026L29.9949 28.0126H23.1849C21.3049 28.0126 19.6149 27.1526 18.5649 25.7126C18.0749 25.0426 17.1649 24.8626 16.4449 25.2626C15.0649 26.0326 13.1849 27.0826 13.1849 27.0826C11.7507 27.9092 9.92974 27.4166 9.09504 26H8V22.5L6.67487 22.5126C6.20487 23.3126 5.36487 23.7626 4.50487 23.7626C4.07487 23.7626 3.64487 23.6526 3.25487 23.4226C2.05487 22.7226 1.64487 21.2026 2.33487 20.0026L7.53487 11.3226C8.70487 9.48265 11.0449 8.77265 13.0449 9.65265ZM8.12552 20H12.25V20.6903L14.5149 19.3826C14.6668 19.2949 14.8222 19.2226 14.9797 19.1647C14.8149 17.389 13.3243 16.0026 11.5049 16.0026C10.8349 16.0026 10.2149 17.3626 9.88487 17.9526L8.12552 20Z" fill="#000"/><path d="M19.1849 2.08261L21.5649 3.46261C21.8649 3.63261 21.9649 4.01261 21.7949 4.31261L12.3939 20.6072L10.1849 21.8826C8.75486 22.7126 8.25486 24.5426 9.08486 25.9826C9.11921 26.0418 9.15527 26.0993 9.19294 26.1553L8.63486 27.1226C8.47486 27.4026 8.24486 27.6526 7.97486 27.8426L5.22486 29.9226C4.90486 30.1426 4.46486 29.8926 4.49486 29.5026L4.87486 26.0626C4.90486 25.7226 5.00486 25.3926 5.17486 25.1026L18.3349 2.31261C18.5049 2.01261 18.8849 1.91261 19.1849 2.08261Z" fill="#000"/></g>
+      <g className="pn-wiggle">
+       <path d="M29.30,16.30 L29.30,30.30 L72.41,59.38 L72.41,45.38Z" fill="#3f3f46"/><path d="M34.27,23.86 L34.27,25.82 L72.41,51.54 L72.41,49.58Z" fill="#F1511B"/><path d="M34.27,26.66 L34.27,27.36 L72.41,53.08 L72.41,52.38Z" fill="#d4d4d8" opacity=".85"/><path d="M29.30,16.30 L29.30,30.30 L31.79,31.98 L31.79,17.98Z" fill="#27272a"/>
+       <path d="M9.99487 15.5826C9.99487 14.2026 11.1149 13.0826 12.4949 13.0826C13.8749 13.0826 14.9949 14.2026 14.9949 15.5826V24.0027H21.9449V20.0027H29.9849V28.7627C29.9849 29.4427 29.4349 30.0027 28.7449 30.0027H19.5049C17.0149 30.0027 14.9949 27.9827 14.9949 25.4927V27.5026C14.9949 28.8826 13.8749 30.0026 12.4949 30.0026C11.1149 30.0026 9.99487 28.8826 9.99487 27.5026V15.5826Z" fill="#A9715F"/><path d="M13.0449 9.65265L28.8949 16.5326C29.5649 16.8226 29.9949 17.4726 29.9949 18.2026L29.9949 28.0126H23.1849C21.3049 28.0126 19.6149 27.1526 18.5649 25.7126C18.0749 25.0426 17.1649 24.8626 16.4449 25.2626C15.0649 26.0326 13.1849 27.0826 13.1849 27.0826C11.7507 27.9092 9.92974 27.4166 9.09504 26H8V22.5L6.67487 22.5126C6.20487 23.3126 5.36487 23.7626 4.50487 23.7626C4.07487 23.7626 3.64487 23.6526 3.25487 23.4226C2.05487 22.7226 1.64487 21.2026 2.33487 20.0026L7.53487 11.3226C8.70487 9.48265 11.0449 8.77265 13.0449 9.65265ZM8.12552 20H12.25V20.6903L14.5149 19.3826C14.6668 19.2949 14.8222 19.2226 14.9797 19.1647C14.8149 17.389 13.3243 16.0026 11.5049 16.0026C10.8349 16.0026 10.2149 17.3626 9.88487 17.9526L8.12552 20Z" fill="#C68D7B"/><path d="M19.1849 2.08261L21.5649 3.46261C21.8649 3.63261 21.9649 4.01261 21.7949 4.31261L12.3939 20.6072L10.1849 21.8826C8.75486 22.7126 8.25486 24.5426 9.08486 25.9826C9.11921 26.0418 9.15527 26.0993 9.19294 26.1553L8.63486 27.1226C8.47486 27.4026 8.24486 27.6526 7.97486 27.8426L5.22486 29.9226C4.90486 30.1426 4.46486 29.8926 4.49486 29.5026L4.87486 26.0626C4.90486 25.7226 5.00486 25.3926 5.17486 25.1026L18.3349 2.31261C18.5049 2.01261 18.8849 1.91261 19.1849 2.08261Z" fill="#F1511B"/><path d="M8.5518 27.2561L5.12207 25.1982C4.98401 25.4642 4.90161 25.7594 4.87486 26.0626L4.60999 28.4604L6.07903 29.2765L7.97486 27.8426C8.20116 27.6834 8.39936 27.482 8.5518 27.2561Z" fill="#FBB8AB"/><path d="M4.68486 27.7227L4.49486 29.5027C4.46486 29.8927 4.90486 30.1427 5.22486 29.9227L6.62486 28.8527L4.68486 27.7227Z" fill="#1e3a8a"/><path d="M16.3949 5.67256L19.8549 7.67256L20.8949 5.87256L17.4349 3.87256L16.3949 5.67256Z" fill="#D3D3D3"/>
+      </g>
      </g>
     </svg></div>
    </div>
@@ -117,7 +111,7 @@ export const slides:SlideDef[]=[
     <h2 className="s-h rv" style={d(1)}>Antigamente,<br/>tudo no <em>papel</em><i>.</i></h2>
     <p className="s-lead rv" style={d(2)}>A troca do rolo era anotada à mão, na prancheta: data, perímetro, turno. E ficava ali.</p>
     <ul className="pp-pains">
-     {([['Anotação manual','Letra ilegível, conta de perímetro feita na mão, campo esquecido.'],
+     {([['Anotação manual','Letra ilegível, dado do rolo copiado errado, campo esquecido.'],
         ['Informação que se perdia','Folhas extraviadas, sem histórico por posição e sem estoque de reservas.'],
         ['Ninguém sabia a campanha','Há quantos dias cada rolo estava no forno? Só procurando no papel.'],
         ['A troca virava emergência','Paradas urgentes, quebra de rolos, abertura de arruelas e travamento.']] as const).map(([t,p],i)=>
@@ -137,7 +131,7 @@ export const slides:SlideDef[]=[
     <div className="nw-table">
      <div className="nw-row nw-th rv" style={d(2)}><span>Papel</span><span/><span>RB1 Roll</span></div>
      {([['Anotado à mão','Registro digital em segundos'],
-        ['Perímetro calculado na mão','π × Ø calculado automaticamente'],
+        ['Dados do rolo no papel','Diâmetro e perímetro no sistema'],
         ['Turno escrito pelo operador','Turno identificado pelo horário'],
         ['Folhas perdidas','Histórico completo, PDF e Excel'],
         ['Campanha desconhecida','Dias de uso por cor, em tempo real']] as const).map(([a,b],i)=>
@@ -151,7 +145,7 @@ export const slides:SlideDef[]=[
      <div><dt>Data e hora</dt><dd>12/03/2026 · 02:40</dd></div>
      <div><dt>Turno</dt><dd>TN · Turno da Noite<span className="nw-auto">automático</span></dd></div>
      <div><dt>Diâmetro</dt><dd>812 mm</dd></div>
-     <div><dt>Perímetro (π × Ø)</dt><dd>2.551 mm<span className="nw-auto">calculado</span></dd></div>
+     <div><dt>Perímetro</dt><dd>2.551 mm<span className="nw-auto">do rolo</span></dd></div>
      <div><dt>Operador</dt><dd>Davi Ferreira Lima</dd></div>
     </dl>
     <div className="nw-camp green"><span><i/>Em dia</span><b>0 dias</b><div className="nw-track"><i/></div></div>
@@ -179,7 +173,7 @@ export const slides:SlideDef[]=[
    <Tag n="04">COMO FUNCIONA</Tag>
    <h2 className="s-h rv" style={d(1)}>Registrou a troca, o forno mostra o resto<i>.</i></h2>
    <ol className="hw-steps">
-    {([['Registrar a troca','Operador, data, motivo e diâmetro. Turno e perímetro são calculados.'],
+    {([['Registrar a troca','Operador, data, motivo e dados do rolo. O turno vem do horário.'],
        ['Contar a campanha','Dias de uso de cada posição, atualizados automaticamente.'],
        ['Sinalizar por cor','Kanban visual: verde, amarelo ou vermelho no mapa do forno.'],
        ['Decidir e agir','Inspeção, troca ou reposição de reserva, com KPIs e critérios técnicos.']] as const).map(([t,p],i)=>
@@ -220,12 +214,13 @@ export const slides:SlideDef[]=[
   <div className="s-body rs-wrap">
    <Tag n="06">RESULTADO</Tag>
    <div className="rs-main">
-    <div className="rs-num rv" style={d(1)}>≈60<span>%</span></div>
-    <p className="rs-txt rv" style={d(2)}><b>menos paradas emergenciais e urgentes</b> relacionadas à troca de rolos de forno.</p>
+    <p className="rs-head rv" style={d(1)}>Menos paradas<br/><em>desnecessárias</em><i>.</i></p>
+    <p className="rs-txt rv" style={d(2)}>Com a campanha de cada rolo à vista, <b>a troca deixa de ser surpresa</b>: é planejada antes da falha, no momento certo, sem parar a linha à toa.</p>
    </div>
+   <span className="rs-note rv" style={d(3)}><i/>Impacto em apuração: os indicadores seguem em acompanhamento.</span>
    <div className="rs-facts">
     {([['jan/26','em funcionamento','desde janeiro de 2026'],['5','posições monitoradas','rolos 0 a 4, on-line'],['3','turnos com registro','turno identificado pelo horário']] as const).map(([v,t,s],i)=>
-     <div key={t} className="rv" style={d(3+i)}><strong>{v}</strong><b>{t}</b><small>{s}</small></div>)}
+     <div key={t} className="rv" style={d(4+i)}><strong>{v}</strong><b>{t}</b><small>{s}</small></div>)}
    </div>
   </div>
  </>},

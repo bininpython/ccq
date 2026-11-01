@@ -12,7 +12,7 @@ const features=[
  [BarChart3,'Estatísticas','Trocas por mês, motivo, turno e posição, e o intervalo médio entre trocas.'],
  [FileSpreadsheet,'Relatórios','PDF e Excel no padrão visual do sistema, exatamente com os filtros aplicados.'],
 ] as const;
-const steps=[['Registre a troca','Operador, data, motivo e diâmetro. O perímetro e o turno são calculados.'],['Acompanhe a campanha','Dias de uso por posição, com limites de 6 e 11 dias para atenção e prioridade.'],['Exporte e analise','Histórico filtrável e relatórios prontos para a reunião de turno.']];
+const steps=[['Registre a troca','Operador, data, motivo e dados do rolo. O turno é identificado pelo horário.'],['Acompanhe a campanha','Dias de uso por posição, com limites de 6 e 11 dias para atenção e prioridade.'],['Exporte e analise','Histórico filtrável e relatórios prontos para a reunião de turno.']];
 
 export function Landing({onEnter}:{onEnter:()=>void}){
  const [playing,setPlaying]=useState(false);
