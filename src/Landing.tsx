@@ -1,7 +1,8 @@
 import {useEffect,useRef,useState} from 'react';
-import {ArrowRight,ArrowUpRight,BarChart3,ClipboardList,Clock3,FileSpreadsheet,Gamepad2,LayoutDashboard,Play,ShieldCheck,X,Zap} from 'lucide-react';
+import {ArrowRight,ArrowUpRight,BarChart3,ClipboardList,Clock3,FileSpreadsheet,Gamepad2,LayoutDashboard,Play,Presentation as PresentationIcon,ShieldCheck,X,Zap} from 'lucide-react';
 import {FurnaceDiagram} from './FurnaceDiagram';
 import {Logo} from './Logo';
+import {DeckPreview,GROUP,Presentation,TEAM,slides} from './Presentation';
 
 // Illustrative rolls for the hero preview only; the real data lives in the panel.
 const demo=[{id:0,name:'Rolo 0',days:4,diameter:789,status:'green'},{id:1,name:'Rolo 1',days:8,diameter:650,status:'yellow'},{id:2,name:'Rolo 2',days:13,diameter:812,status:'red'},{id:3,name:'Rolo 3',days:2,diameter:805,status:'green'},{id:4,name:'Rolo 4',days:null,diameter:null,status:'unknown'}];
@@ -15,6 +16,15 @@ const steps=[['Registre a troca','Operador, data, motivo e diâmetro. O perímet
 
 export function Landing({onEnter}:{onEnter:()=>void}){
  const [playing,setPlaying]=useState(false);
+ // A apresentação tem endereço próprio (/#apresentacao) para abrir direto no telão.
+ const [deck,setDeck]=useState(()=>location.hash==='#apresentacao');
+ useEffect(()=>{
+  const f=()=>setDeck(location.hash==='#apresentacao');
+  window.addEventListener('hashchange',f);window.addEventListener('popstate',f);
+  return()=>{window.removeEventListener('hashchange',f);window.removeEventListener('popstate',f)};
+ },[]);
+ const openDeck=()=>{history.pushState(null,'','#apresentacao');setDeck(true)};
+ const closeDeck=()=>{history.pushState(null,'',location.pathname+location.search);setDeck(false)};
  const frame=useRef<HTMLIFrameElement>(null);
  useEffect(()=>{
   const f=(e:MessageEvent)=>{if(e.origin!==location.origin)return;if(e.data?.type==='rb1:close')setPlaying(false);if(e.data?.type==='rb1:enter'){setPlaying(false);onEnter()}};
@@ -30,7 +40,7 @@ export function Landing({onEnter}:{onEnter:()=>void}){
  return <div className="landing">
   <div className="l-nav" role="navigation" aria-label="Principal">
    <a className="l-brand" href="#" aria-label="RB1 Roll"><span className="logo"><Logo/></span><span><b>RB1 ROLL</b><small>Condição dos rolos · Aperam</small></span></a>
-   <div className="l-nav-actions"><button className="l-link" onClick={()=>document.getElementById('jogo')?.scrollIntoView({behavior:'smooth'})}>A missão do forno</button><button className="primary" onClick={onEnter}>Acessar painel<ArrowRight size={16}/></button></div>
+   <div className="l-nav-actions"><button className="l-link" onClick={openDeck}>Apresentação</button><button className="l-link" onClick={()=>document.getElementById('jogo')?.scrollIntoView({behavior:'smooth'})}>A missão do forno</button><button className="primary" onClick={onEnter}>Acessar painel<ArrowRight size={16}/></button></div>
   </div>
 
   <header className="l-hero">
@@ -39,6 +49,7 @@ export function Landing({onEnter}:{onEnter:()=>void}){
     <h1>Cada rolo do forno,<br/>sob controle<i>.</i></h1>
     <p>O RB1 Roll registra as trocas dos rolos do forno de recozimento, mostra há quantos dias cada posição está em uso e transforma o histórico em indicadores e relatórios para o turno.</p>
     <div className="l-ctas"><button className="primary l-big" onClick={onEnter}>Acessar painel<ArrowRight size={18}/></button><button className="secondary l-big" onClick={()=>setPlaying(true)}><Gamepad2 size={18}/>Jogar a missão do forno</button></div>
+    <button className="l-deck-link" onClick={openDeck}><PresentationIcon size={16}/>Ver a apresentação do {GROUP}<ArrowRight size={15}/></button>
     <ul className="l-pills"><li><ShieldCheck size={14}/>Sem login</li><li><Clock3 size={14}/>Turno automático</li><li><FileSpreadsheet size={14}/>PDF e Excel</li></ul>
    </div>
    <div className="l-preview" aria-label="Pré-visualização do mapa do forno">
@@ -55,6 +66,22 @@ export function Landing({onEnter}:{onEnter:()=>void}){
   <section className="l-section">
    <div className="l-section-head"><span className="eyebrow"><i/>COMO FUNCIONA</span><h2>Três passos, nenhum cadastro.</h2></div>
    <ol className="l-steps">{steps.map(([t,d],i)=><li key={t}><span>{i+1}</span><div><h3>{t}</h3><p>{d}</p></div></li>)}</ol>
+  </section>
+
+  <section className="l-deck" id="apresentacao">
+   <div className="l-deck-copy">
+    <span className="eyebrow"><i/>APRESENTAÇÃO · {GROUP.toUpperCase()}</span>
+    <h2>Do papel ao dado<i>.</i></h2>
+    <p>Em {slides.length} slides, direto ao ponto: como era a anotação manual na prancheta, o que mudou com o RB1 Roll, o objetivo, o resultado e quem fez acontecer.</p>
+    <ol className="l-deck-list">{slides.map((s,i)=><li key={s.title}><span>{String(i+1).padStart(2,'0')}</span>{s.title}</li>)}</ol>
+    <div className="l-ctas"><button className="primary l-big" onClick={openDeck}><PresentationIcon size={18}/>Iniciar apresentação</button></div>
+    <small className="l-keys dark">Navegue com ← →, tela cheia com F, Esc para sair. O botão PDF imprime um slide por página.</small>
+   </div>
+   <button className="l-deck-poster" onClick={openDeck} aria-label="Iniciar apresentação"><DeckPreview/><span className="l-play"><Play size={26}/></span></button>
+   <div className="l-team">
+    <span className="l-team-label">{GROUP}</span>
+    <ul>{TEAM.map(([name,role])=><li key={name}><b>{name}</b><small>{role}</small></li>)}</ul>
+   </div>
   </section>
 
   <section className="l-game" id="jogo">
@@ -75,7 +102,9 @@ export function Landing({onEnter}:{onEnter:()=>void}){
    <button className="l-game-poster" onClick={()=>setPlaying(true)} aria-label="Iniciar jogo"><img src="/game/preview.png" alt="Cena do jogo: operação da ponte rolante por controle remoto em frente ao forno de recozimento" loading="lazy"/><span className="l-play"><Play size={26}/></span></button>
   </section>
 
-  <footer className="l-footer"><span>RB1 Roll · Condição dos rolos</span><button className="text-link" onClick={onEnter}>Acessar painel →</button></footer>
+  <footer className="l-footer"><span>RB1 Roll · Condição dos rolos · {GROUP}</span><button className="text-link" onClick={onEnter}>Acessar painel →</button></footer>
+
+  {deck&&<Presentation onClose={closeDeck} onEnter={()=>{setDeck(false);onEnter()}} onPlay={()=>{closeDeck();setPlaying(true)}}/>}
 
   {playing&&<div className="l-modal" role="dialog" aria-modal="true" aria-label="Jogo A Missão do Forno">
    <div className="l-modal-bar"><span><b>A Missão do Forno</b><small>Feche no ✕ para voltar à apresentação</small></span><button className="l-modal-close" onClick={()=>setPlaying(false)} aria-label="Fechar jogo"><X size={18}/></button></div>
