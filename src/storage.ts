@@ -3,19 +3,25 @@ const key='ccq.local.v1';
 let mode:'local'|'server'|null=null;
 let selecting:Promise<void>|null=null;
 const checks=['Superfície do rolo','Ruído anormal','Vibração','Alinhamento da tira','Mancais e refrigeração'];
-// Estoque da retífica: bandeja com 4 posições para rolos cerâmicos.
+// Estoques de rolos cerâmicos (retífica e RB1), cada um com uma bandeja de 4 posições.
+export const STOCK_PLACES=['retifica','rb1'] as const;
+export type StockPlace=typeof STOCK_PLACES[number];
 export const STOCK_SLOTS=4;
 export const STOCK_CONDITIONS=['Retificado · pronto para uso','Aguardando retífica','Em inspeção'];
-const emptySlot=(slot:number)=>({slot,code:null,perimeter:null,diameter:null,condition:null,entered:null,operator:null,notes:null,version:0});
+const emptySlot=(place:StockPlace,slot:number)=>({place,slot,code:null,perimeter:null,diameter:null,condition:null,entered:null,operator:null,notes:null,version:0});
 export const storageMode=()=>mode;
 export function day(s:string){return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s))}
 export function status(days:number|null){return days===null?'unknown':days<=5?'green':days<=10?'yellow':'red'}
 function read():State{
  const raw=localStorage.getItem(key);
  const state:State=raw?JSON.parse(raw):{rolls:Array.from({length:5},(_,id)=>({id,name:`Rolo ${id}`,location:id?`Forno · posição ${id}`:'Externo · entrada',serial:null,diameter:null,installed:null,version:0,days:null,status:'unknown'})),events:[],tasks:[],inspections:[],audit:[],server_time:new Date().toISOString()};
- // Dados gravados antes do estoque da retífica ganham a bandeja vazia.
- if(!Array.isArray(state.stock))state.stock=Array.from({length:STOCK_SLOTS},(_,i)=>emptySlot(i+1));
+ // Dados antigos: sem estoque ganham as bandejas vazias; a primeira versão tinha só a retífica.
+ if(!Array.isArray(state.stock))state.stock=[];
  if(!Array.isArray(state.stock_moves))state.stock_moves=[];
+ for(const x of state.stock)x.place??='retifica';
+ for(const m of state.stock_moves)m.place??='retifica';
+ for(const place of STOCK_PLACES)for(let slot=1;slot<=STOCK_SLOTS;slot++)if(!state.stock.some(x=>x.place===place&&x.slot===slot))state.stock.push(emptySlot(place,slot));
+ state.stock.sort((a,b)=>a.place.localeCompare(b.place)||a.slot-b.slot);
  if(!Array.isArray(state.rolls)||!Array.isArray(state.events)||!Array.isArray(state.tasks)||!Array.isArray(state.inspections)||!Array.isArray(state.audit))throw new Error('Dados locais inválidos. Preserve o armazenamento e procure suporte.');
  const now=new Date().toISOString();
  for(const r of state.rolls){r.days=r.installed?Math.max(0,Math.round((Date.parse(day(now))-Date.parse(day(r.installed)))/86400000)):null;r.status=status(r.days)}
@@ -30,10 +36,11 @@ function measure(b:Record<string,unknown>,k:string,limit:number,label:string,opt
 function change(path:string,b:Record<string,unknown>){
  const s=read(),operator=text(b,'operator',100),now=new Date().toISOString(),id=crypto.randomUUID();
  if(path==='stock/in'||path==='stock/out'){
-  const slot=s.stock.find(x=>x.slot===b.slot);if(!slot)throw new Error('Posição da bandeja inválida.');
+  if(!STOCK_PLACES.includes(b.place as StockPlace))throw new Error('Estoque inválido.');
+  const place=b.place as StockPlace,slot=s.stock.find(x=>x.place===place&&x.slot===b.slot);if(!slot)throw new Error('Posição da bandeja inválida.');
   if(slot.version!==b.version)throw new Error('A bandeja foi atualizada por outro registro. Atualize a tela.');
   const occurred=text(b,'occurred',50),dt=new Date(occurred);if(!Number.isFinite(dt.getTime())||dt.getTime()>Date.now())throw new Error('Data inválida ou futura.');
-  const notes=String(b.notes||'').trim().slice(0,2000),base={id,slot:slot.slot,operator,shift:shiftOf(dt),occurred,recorded:now,notes};
+  const notes=String(b.notes||'').trim().slice(0,2000),base={id,place,slot:slot.slot,operator,shift:shiftOf(dt),occurred,recorded:now,notes};
   if(path==='stock/in'){
    if(slot.entered)throw new Error('Esta posição da bandeja já está ocupada.');
    const code=String(b.code||'').trim().slice(0,60)||null,perimeter=measure(b,'perimeter',20000,'Perímetro'),diameter=measure(b,'diameter',10000,'Diâmetro',true);
@@ -46,7 +53,7 @@ function change(path:string,b:Record<string,unknown>){
    if(dt<new Date(slot.entered))throw new Error('A saída deve ser posterior à entrada do rolo.');
    const destination=text(b,'destination',200);
    s.stock_moves.unshift({...base,action:'saida',code:slot.code,perimeter:slot.perimeter,diameter:slot.diameter,condition:slot.condition,destination});
-   Object.assign(slot,{...emptySlot(slot.slot),version:slot.version+1});
+   Object.assign(slot,{...emptySlot(place,slot.slot),version:slot.version+1});
   }
  }else if(path==='tasks/status'){
   const t=s.tasks.find(t=>t.id===b.id);if(!t||t.status!==b.expected)throw new Error('Atividade alterada. Atualize a tela.');

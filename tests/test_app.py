@@ -48,22 +48,43 @@ class TestCCQ(unittest.TestCase):
         with self.assertRaises(ValueError):app.mutate('/api/inspections',dict(roll_id=0,occurred=datetime.now(app.TZ).isoformat(),checks={k:'issue' for k in app.CHECKS}),'Abner')
 
     def stock_in(self,**extra):
-        data=dict(slot=1,version=0,occurred=(datetime.now(app.TZ)-timedelta(minutes=5)).isoformat(),code='RC-01',perimeter=377.0,diameter=120,condition=app.STOCK_CONDITIONS[0],notes='')
+        data=dict(place='retifica',slot=1,version=0,occurred=(datetime.now(app.TZ)-timedelta(minutes=5)).isoformat(),code='RC-01',perimeter=377.0,diameter=120,condition=app.STOCK_CONDITIONS[0],notes='')
         data.update(extra);return data
-    def test_stock_tray_has_four_empty_slots(self):
-        with app.connect() as db:rows=db.execute('SELECT * FROM stock ORDER BY slot').fetchall()
-        self.assertEqual([r['slot'] for r in rows],[1,2,3,4]);self.assertTrue(all(r['entered'] is None for r in rows))
+    def test_stock_trays_have_four_empty_slots_each(self):
+        with app.connect() as db:rows=db.execute('SELECT * FROM stock_slots ORDER BY place,slot').fetchall()
+        self.assertEqual([(r['place'],r['slot']) for r in rows],[('rb1',1),('rb1',2),('rb1',3),('rb1',4),('retifica',1),('retifica',2),('retifica',3),('retifica',4)])
+        self.assertTrue(all(r['entered'] is None for r in rows))
+    def test_rb1_and_retifica_are_independent(self):
+        app.mutate('/api/stock/in',self.stock_in(),'Rafael')
+        app.mutate('/api/stock/in',self.stock_in(place='rb1',code='RB-01'),'Davi')
+        with self.assertRaises(ValueError):app.mutate('/api/stock/in',self.stock_in(place='outro'),'Davi')
+        with app.connect() as db:rows={(r['place'],r['slot']):r['code'] for r in db.execute('SELECT * FROM stock_slots WHERE entered IS NOT NULL')}
+        self.assertEqual(rows,{('retifica',1):'RC-01',('rb1',1):'RB-01'})
+    def test_migrates_first_version_stock(self):
+        with app.connect() as db:
+            db.executescript('''CREATE TABLE stock(slot INTEGER PRIMARY KEY, code TEXT, perimeter REAL, diameter REAL, condition TEXT, entered TEXT, operator TEXT, notes TEXT, version INTEGER NOT NULL DEFAULT 0);
+            CREATE TABLE stock_moves(id TEXT PRIMARY KEY, slot INTEGER NOT NULL REFERENCES stock(slot), action TEXT NOT NULL, code TEXT, perimeter REAL, diameter REAL, condition TEXT, destination TEXT, operator TEXT NOT NULL, shift TEXT NOT NULL, occurred TEXT NOT NULL, recorded TEXT NOT NULL, notes TEXT);
+            DELETE FROM stock_slots;''')
+            for slot in range(1,5):db.execute('INSERT INTO stock(slot) VALUES(?)',(slot,))
+            db.execute("UPDATE stock SET code='OLD',perimeter=370,condition='Em inspeção',entered='2026-11-01T08:00:00-03:00',operator='Ana',version=1 WHERE slot=3")
+            db.execute("INSERT INTO stock_moves VALUES('m1',3,'entrada','OLD',370,NULL,'Em inspeção',NULL,'Ana','TM','2026-11-01T08:00:00-03:00','2026-11-01T08:00:00-03:00','')")
+        app.init()
+        with app.connect() as db:
+            self.assertEqual(db.execute("SELECT code FROM stock_slots WHERE place='retifica' AND slot=3").fetchone()[0],'OLD')
+            self.assertEqual(db.execute("SELECT place FROM stock_log WHERE id='m1'").fetchone()[0],'retifica')
+            self.assertEqual(db.execute("SELECT count(*) FROM stock_slots WHERE place='rb1'").fetchone()[0],4)
+            self.assertIsNone(db.execute("SELECT name FROM sqlite_master WHERE name='stock'").fetchone())
     def test_stock_in_and_out_keeps_history(self):
         app.mutate('/api/stock/in',self.stock_in(),'Rafael')
         with self.assertRaises(ValueError):app.mutate('/api/stock/in',self.stock_in(version=1),'Outro')
-        app.mutate('/api/stock/out',dict(slot=1,version=1,occurred=datetime.now(app.TZ).isoformat(),destination='Instalado no forno · posição 2'),'Davi')
+        app.mutate('/api/stock/out',dict(place='retifica',slot=1,version=1,occurred=datetime.now(app.TZ).isoformat(),destination='Instalado no forno · posição 2'),'Davi')
         with app.connect() as db:
-            slot=db.execute('SELECT * FROM stock WHERE slot=1').fetchone();moves=db.execute('SELECT * FROM stock_moves ORDER BY occurred').fetchall()
+            slot=db.execute("SELECT * FROM stock_slots WHERE place='retifica' AND slot=1").fetchone();moves=db.execute('SELECT * FROM stock_log ORDER BY occurred').fetchall()
         self.assertIsNone(slot['entered']);self.assertEqual(slot['version'],2)
         self.assertEqual([m['action'] for m in moves],['entrada','saida']);self.assertEqual(moves[1]['perimeter'],377.0);self.assertEqual(moves[1]['code'],'RC-01')
     def test_stock_validation(self):
         for bad in [dict(perimeter=None),dict(perimeter=0),dict(perimeter='300'),dict(condition='Qualquer'),dict(slot=5),dict(version=3)]:
             with self.assertRaises(ValueError):app.mutate('/api/stock/in',self.stock_in(**bad),'Rafael')
-        with self.assertRaises(ValueError):app.mutate('/api/stock/out',dict(slot=2,version=0,occurred=datetime.now(app.TZ).isoformat(),destination='Sucata'),'Rafael')
+        with self.assertRaises(ValueError):app.mutate('/api/stock/out',dict(place='retifica',slot=2,version=0,occurred=datetime.now(app.TZ).isoformat(),destination='Sucata'),'Rafael')
 
 if __name__=='__main__':unittest.main()

@@ -26,12 +26,21 @@ test('replacement without roll identification',async()=>{
  const after=await api('state');assert.equal(after.events[0].serial,'');assert.equal(after.rolls[1].serial,null);assert.equal(after.rolls[1].diameter,640);
 });
 test('estoque da retífica: bandeja com 4 posições, entrada e saída',async()=>{
- let s=await api('state');assert.equal(s.stock.length,4);assert.ok(s.stock.every(x=>x.entered===null));
+ let s=await api('state');assert.equal(s.stock.length,8);assert.ok(s.stock.every(x=>x.entered===null));const ret=st=>st.stock.filter(x=>x.place==='retifica');
  const occurred=new Date(Date.now()-60000).toISOString();
- await api('stock/in',{slot:2,version:0,operator:'Rafael',occurred,code:'RC-07',perimeter:377,diameter:120,condition:'Retificado · pronto para uso'});
- s=await api('state');assert.equal(s.stock[1].perimeter,377);assert.equal(s.stock[1].version,1);
- await assert.rejects(()=>api('stock/in',{slot:2,version:1,operator:'Outro',occurred,perimeter:300,condition:'Em inspeção'}));
- await assert.rejects(()=>api('stock/in',{slot:3,version:0,operator:'Outro',occurred,perimeter:'300',condition:'Em inspeção'}));
- await api('stock/out',{slot:2,version:1,operator:'Davi',occurred:new Date().toISOString(),destination:'Instalado no forno · posição 1'});
- s=await api('state');assert.equal(s.stock[1].entered,null);assert.deepEqual(s.stock_moves.map(m=>m.action),['saida','entrada']);assert.equal(s.stock_moves[0].code,'RC-07');
+ await api('stock/in',{place:'retifica',slot:2,version:0,operator:'Rafael',occurred,code:'RC-07',perimeter:377,diameter:120,condition:'Retificado · pronto para uso'});
+ s=await api('state');assert.equal(ret(s)[1].perimeter,377);assert.equal(ret(s)[1].version,1);
+ await assert.rejects(()=>api('stock/in',{place:'retifica',slot:2,version:1,operator:'Outro',occurred,perimeter:300,condition:'Em inspeção'}));
+ await assert.rejects(()=>api('stock/in',{place:'retifica',slot:3,version:0,operator:'Outro',occurred,perimeter:'300',condition:'Em inspeção'}));
+ await api('stock/out',{place:'retifica',slot:2,version:1,operator:'Davi',occurred:new Date().toISOString(),destination:'Instalado no forno · posição 1'});
+ s=await api('state');assert.equal(ret(s)[1].entered,null);assert.deepEqual(s.stock_moves.map(m=>m.action),['saida','entrada']);assert.equal(s.stock_moves[0].code,'RC-07');
+});
+test('estoque RB1 independente e migração da primeira versão',async()=>{
+ const occurred=new Date(Date.now()-60000).toISOString();
+ await api('stock/in',{place:'rb1',slot:1,version:0,operator:'Davi',occurred,code:'RB-01',perimeter:380,condition:'Retificado · pronto para uso'});
+ await assert.rejects(()=>api('stock/in',{place:'almoxarifado',slot:1,version:0,operator:'Davi',occurred,perimeter:380,condition:'Em inspeção'}));
+ let s=await api('state');assert.equal(s.stock.find(x=>x.place==='rb1'&&x.slot===1).code,'RB-01');assert.equal(s.stock.find(x=>x.place==='retifica'&&x.slot===1).entered,null);
+ // dados gravados pela primeira versão (sem "place") viram estoque da retífica
+ const raw=JSON.parse(memory.get('ccq.local.v1'));raw.stock=[{slot:3,code:'OLD',perimeter:370,diameter:null,condition:'Em inspeção',entered:occurred,operator:'Ana',notes:'',version:1}];raw.stock_moves=[{id:'m1',slot:3,action:'entrada',code:'OLD',perimeter:370,operator:'Ana',shift:'TM',occurred,recorded:occurred}];memory.set('ccq.local.v1',JSON.stringify(raw));
+ s=await api('state');assert.equal(s.stock.length,8);assert.equal(s.stock.find(x=>x.place==='retifica'&&x.slot===3).code,'OLD');assert.equal(s.stock_moves[0].place,'retifica');
 });

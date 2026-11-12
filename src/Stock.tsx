@@ -1,9 +1,13 @@
 import type {FormEvent,KeyboardEvent,ReactNode} from 'react';
 import {ArrowDownToLine,ArrowUpFromLine,Check,PackagePlus,Ruler} from 'lucide-react';
-import {STOCK_CONDITIONS} from './storage';
+import {STOCK_CONDITIONS,type StockPlace} from './storage';
 import type {State,StockSlot} from './main';
 
-// Estoque da retífica: bandeja vista de cima com 4 posições para rolos cerâmicos de forno (≈ 4 m).
+// Estoques de rolos cerâmicos (retífica e RB1): bandeja vista de cima com 4 posições para rolos de forno (≈ 4 m).
+export const PLACES:Record<StockPlace,{name:string;eyebrow:string;destinations:string[]}>={
+ retifica:{name:'Estoque da retífica',eyebrow:'ESTOQUE DA RETÍFICA',destinations:['Transferido para o estoque RB1','Enviado para retífica externa','Sucata / descarte','Outro']},
+ rb1:{name:'Estoque da RB1',eyebrow:'ESTOQUE RB1',destinations:['Devolvido para a retífica','Sucata / descarte','Outro']},
+};
 export const COND:Record<string,{short:string;tone:string}>={
  'Retificado · pronto para uso':{short:'Pronto para uso',tone:'green'},
  'Aguardando retífica':{short:'Aguardando retífica',tone:'yellow'},
@@ -50,8 +54,8 @@ export function StockTray({stock,onSelect,num}:{stock:StockSlot[];onSelect:(slot
  </svg></div>;
 }
 
-export function StockPage({state,onSelect,onLaunch,f}:{state:State|null;onSelect:(slot:number)=>void;onLaunch:()=>void;f:Fmt}){
- const stock=state?.stock||[],moves=state?.stock_moves||[];
+export function StockPage({place,state,onSelect,onLaunch,f}:{place:StockPlace;state:State|null;onSelect:(slot:number)=>void;onLaunch:()=>void;f:Fmt}){
+ const stock=(state?.stock||[]).filter(x=>x.place===place),moves=(state?.stock_moves||[]).filter(x=>x.place===place);
  const full=stock.filter(s=>s.entered),ready=full.filter(s=>s.condition===STOCK_CONDITIONS[0]).length;
  const perims=full.map(s=>s.perimeter||0).filter(Boolean);
  const avg=perims.length?perims.reduce((a,b)=>a+b,0)/perims.length:null;
@@ -60,7 +64,7 @@ export function StockPage({state,onSelect,onLaunch,f}:{state:State|null;onSelect
    <div className="kpi green"><span>Prontos para uso</span><strong>{String(ready).padStart(2,'0')}</strong><small>Retificados e liberados</small></div>
    <div className="kpi yellow"><span>Aguardando</span><strong>{String(full.length-ready).padStart(2,'0')}</strong><small>Retífica ou inspeção</small></div>
    <div className="kpi"><span>Perímetro médio</span><strong className="kpi-text">{avg?f.num(Math.round(avg))+' mm':'—'}</strong><small>Rolos na bandeja</small></div></section>
-  <section className="panel"><div className="panel-head"><div><h2>Bandeja de estoque</h2><p>Clique em uma posição para lançar um rolo ou ver os detalhes.</p></div><div className="map-legend">{Object.values(COND).map(c=><span key={c.short} className={c.tone}><i/>{c.short}</span>)}</div></div>
+  <section className="panel"><div className="panel-head"><div><h2>Bandeja de estoque · {place==='rb1'?'RB1':'retífica'}</h2><p>Clique em uma posição para lançar um rolo ou ver os detalhes.</p></div><div className="map-legend">{Object.values(COND).map(c=><span key={c.short} className={c.tone}><i/>{c.short}</span>)}</div></div>
    <StockTray stock={stock} onSelect={onSelect} num={f.num}/>
    <div className="panel-foot"><span><Ruler size={13}/>Rolo cerâmico branco de forno · ≈ 4 m</span><span>4 posições na bandeja</span><button className="ghost" onClick={onLaunch} disabled={full.length>=4}><PackagePlus size={14}/>Lançar rolo</button></div></section>
   <div className="section-title"><div><h2>Movimentações do estoque</h2><p>Entradas e saídas da bandeja, com perímetro, condição e destino.</p></div><span className="count-pill">{moves.length} {moves.length===1?'registro':'registros'}</span></div>
@@ -71,14 +75,14 @@ export function StockPage({state,onSelect,onLaunch,f}:{state:State|null;onSelect
    <td className="mono">{m.perimeter?f.num(m.perimeter)+' mm':'—'}<small>{m.diameter?'Ø '+f.num(m.diameter)+' mm':''}</small></td>
    <td>{m.action==='entrada'?m.condition:m.destination}<small>{m.notes}</small></td>
    <td>{m.operator}</td></tr>)}</tbody></table>
-   {!moves.length&&<div className="empty"><PackagePlus size={20}/><strong>Nenhuma movimentação ainda</strong><span>Lance o primeiro rolo da retífica na bandeja.</span></div>}</div></section>
+   {!moves.length&&<div className="empty"><PackagePlus size={20}/><strong>Nenhuma movimentação ainda</strong><span>Lance o primeiro rolo {place==='rb1'?'do estoque da RB1':'da retífica'} na bandeja.</span></div>}</div></section>
  </>;
 }
 
-type ModalCtx={kind:string;slot:number;state:State|null;operator:string;setOperator:(v:string)=>void;date:string;setDate:(v:string)=>void;max:string;shiftLabel:(d:string)=>string;busy:boolean;error:string;submit:(path:string,payload:unknown)=>void;open:(kind:string,slot:number)=>void;close:()=>void;rolls:{id:number;name:string;location:string}[];f:Fmt};
+type ModalCtx={place:StockPlace;kind:string;slot:number;state:State|null;operator:string;setOperator:(v:string)=>void;date:string;setDate:(v:string)=>void;max:string;shiftLabel:(d:string)=>string;busy:boolean;error:string;submit:(path:string,payload:unknown)=>void;open:(kind:string,slot:number)=>void;close:()=>void;rolls:{id:number;name:string;location:string}[];f:Fmt};
 
 export function StockModal(c:ModalCtx){
- const stock=c.state?.stock||[],slot=stock.find(s=>s.slot===c.slot),empty=stock.filter(s=>!s.entered);
+ const stock=(c.state?.stock||[]).filter(x=>x.place===c.place),slot=stock.find(s=>s.slot===c.slot),empty=stock.filter(s=>!s.entered),P=PLACES[c.place];
  const occurred=()=>new Date(c.date+'-03:00').toISOString();
  const head=(eyebrow:string,title:string)=><><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></>;
  const when=<div className="form-row"><label>Data e hora<input type="datetime-local" required value={c.date} max={c.max} onChange={e=>c.setDate(e.target.value)}/></label><label>Turno<input readOnly value={c.shiftLabel(c.date)}/></label></div>;
@@ -86,22 +90,22 @@ export function StockModal(c:ModalCtx){
  const footer=(label:ReactNode)=><>{c.error&&<div role="alert" className="error">{c.error}</div>}<div className="modal-actions"><button type="button" className="secondary" disabled={c.busy} onClick={c.close}>Cancelar</button><button className="primary" disabled={c.busy}><Check size={17}/>{c.busy?'Salvando…':label}</button></div></>;
  if(c.kind==='stock-slot'&&slot?.entered){
   const cond=slot.condition?COND[slot.condition]:null;
-  return <>{head('ESTOQUE DA RETÍFICA · BANDEJA','Posição '+slot.slot)}{cond&&<span className={'badge '+cond.tone}>{cond.short}</span>}
+  return <>{head(P.eyebrow+' · BANDEJA','Posição '+slot.slot)}{cond&&<span className={'badge '+cond.tone}>{cond.short}</span>}
    <dl className="detail-list"><dt>Identificação</dt><dd>{slot.code||'Sem identificação'}</dd><dt>Perímetro</dt><dd>{c.f.num(slot.perimeter!)} mm</dd><dt>Diâmetro</dt><dd>{slot.diameter?c.f.num(slot.diameter)+' mm':'Não informado'}</dd><dt>Entrada</dt><dd>{c.f.fmt(slot.entered)}</dd><dt>Tempo no estoque</dt><dd>{c.f.days(slot.entered)} {c.f.days(slot.entered)===1?'dia':'dias'}</dd><dt>Lançado por</dt><dd>{slot.operator}</dd></dl>
    {slot.notes&&<p className="stock-notes">{slot.notes}</p>}
    <div className="modal-actions"><button className="secondary" onClick={c.close}>Fechar</button><button className="primary" onClick={()=>c.open('stock-out',slot.slot)}><ArrowUpFromLine size={17}/>Retirar da bandeja</button></div></>;
  }
  if(c.kind==='stock-out'&&slot?.entered){
-  const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));c.submit('stock/out',{operator:c.operator,slot:slot.slot,version:slot.version,destination:f.destination,occurred:occurred(),notes:f.notes})};
-  return <form onSubmit={send}>{head('ESTOQUE DA RETÍFICA · SAÍDA','Retirar rolo da bandeja')}
+  const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));c.submit('stock/out',{place:c.place,operator:c.operator,slot:slot.slot,version:slot.version,destination:f.destination,occurred:occurred(),notes:f.notes})};
+  return <form onSubmit={send}>{head(P.eyebrow+' · SAÍDA','Retirar rolo da bandeja')}
    <p className="stock-summary">Posição {slot.slot} · {slot.code||'sem identificação'} · perímetro {c.f.num(slot.perimeter!)} mm</p>
-   {who}<label>Destino do rolo<select name="destination" required defaultValue=""><option value="" disabled>Selecione o destino</option>{c.rolls.map(r=><option key={r.id}>{`Instalado no forno · ${r.name} (${r.location})`}</option>)}<option>Enviado para retífica externa</option><option>Sucata / descarte</option><option>Outro</option></select></label>
+   {who}<label>Destino do rolo<select name="destination" required defaultValue=""><option value="" disabled>Selecione o destino</option>{c.rolls.map(r=><option key={r.id}>{`Instalado no forno · ${r.name} (${r.location})`}</option>)}{P.destinations.map(d=><option key={d}>{d}</option>)}</select></label>
    {when}<label>Observações · opcional<textarea name="notes" maxLength={2000} placeholder="Ex.: instalado na troca do turno, condição da superfície…"/></label>{footer('Registrar saída')}</form>;
  }
  const initial=slot&&!slot.entered?slot.slot:empty[0]?.slot;
- const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));const target=stock.find(s=>s.slot===Number(f.slot));c.submit('stock/in',{operator:c.operator,slot:Number(f.slot),version:target?.version,code:f.code,perimeter:Number(f.perimeter),diameter:f.diameter?Number(f.diameter):null,condition:f.condition,occurred:occurred(),notes:f.notes})};
- if(!empty.length)return <>{head('ESTOQUE DA RETÍFICA','Bandeja cheia')}<p>As 4 posições estão ocupadas. Retire um rolo antes de lançar outro.</p><div className="modal-actions"><button className="primary" onClick={c.close}>Entendi</button></div></>;
- return <form onSubmit={send}>{head('ESTOQUE DA RETÍFICA · ENTRADA','Lançar rolo no estoque')}
+ const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));const target=stock.find(s=>s.slot===Number(f.slot));c.submit('stock/in',{place:c.place,operator:c.operator,slot:Number(f.slot),version:target?.version,code:f.code,perimeter:Number(f.perimeter),diameter:f.diameter?Number(f.diameter):null,condition:f.condition,occurred:occurred(),notes:f.notes})};
+ if(!empty.length)return <>{head(P.eyebrow,'Bandeja cheia')}<p>As 4 posições estão ocupadas. Retire um rolo antes de lançar outro.</p><div className="modal-actions"><button className="primary" onClick={c.close}>Entendi</button></div></>;
+ return <form onSubmit={send}>{head(P.eyebrow+' · ENTRADA','Lançar rolo no estoque')}
   {who}<div className="form-row"><label>Posição na bandeja<select name="slot" defaultValue={initial}>{empty.map(s=><option key={s.slot} value={s.slot}>Posição {s.slot}</option>)}</select></label><label>Identificação · opcional<input name="code" maxLength={60} placeholder="Ex.: RC-012"/></label></div>
   <div className="form-row"><label>Perímetro (mm)<input name="perimeter" type="number" required min="1" max="19999" step="0.1" placeholder="Conforme o rolo"/></label><label>Diâmetro (mm) · opcional<input name="diameter" type="number" min="1" max="9999" step="0.1" placeholder="Ex.: 120"/></label></div>
   <label>Condição<select name="condition" required defaultValue={STOCK_CONDITIONS[0]}>{STOCK_CONDITIONS.map(s=><option key={s}>{s}</option>)}</select></label>
