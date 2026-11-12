@@ -112,7 +112,8 @@ begin
       insert into private.pin_attempts default values;
       return jsonb_build_object('ok',false,'error','Senha da retífica incorreta.');
     end if;
-    delete from private.pin_attempts;
+    -- O Supabase recusa DELETE sem WHERE vindo da API (safeupdate).
+    delete from private.pin_attempts where at is not null;
   end if;
   v_op := public.rb1_text(p,'operator',100,'operador'); v_t := public.rb1_when(p);
   if coalesce(p->>'place','') not in ('retifica','rb1') then raise exception 'Estoque inválido.'; end if;
