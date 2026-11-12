@@ -25,3 +25,13 @@ test('replacement without roll identification',async()=>{
  await api('replacements',{roll_id:1,operator:'Abner',version:s.rolls[1].version,occurred,diameter:640,reason:'Troca preventiva'});
  const after=await api('state');assert.equal(after.events[0].serial,'');assert.equal(after.rolls[1].serial,null);assert.equal(after.rolls[1].diameter,640);
 });
+test('estoque da retífica: bandeja com 4 posições, entrada e saída',async()=>{
+ let s=await api('state');assert.equal(s.stock.length,4);assert.ok(s.stock.every(x=>x.entered===null));
+ const occurred=new Date(Date.now()-60000).toISOString();
+ await api('stock/in',{slot:2,version:0,operator:'Rafael',occurred,code:'RC-07',perimeter:377,diameter:120,condition:'Retificado · pronto para uso'});
+ s=await api('state');assert.equal(s.stock[1].perimeter,377);assert.equal(s.stock[1].version,1);
+ await assert.rejects(()=>api('stock/in',{slot:2,version:1,operator:'Outro',occurred,perimeter:300,condition:'Em inspeção'}));
+ await assert.rejects(()=>api('stock/in',{slot:3,version:0,operator:'Outro',occurred,perimeter:'300',condition:'Em inspeção'}));
+ await api('stock/out',{slot:2,version:1,operator:'Davi',occurred:new Date().toISOString(),destination:'Instalado no forno · posição 1'});
+ s=await api('state');assert.equal(s.stock[1].entered,null);assert.deepEqual(s.stock_moves.map(m=>m.action),['saida','entrada']);assert.equal(s.stock_moves[0].code,'RC-07');
+});

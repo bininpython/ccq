@@ -47,4 +47,23 @@ class TestCCQ(unittest.TestCase):
     def test_anomaly_requires_note(self):
         with self.assertRaises(ValueError):app.mutate('/api/inspections',dict(roll_id=0,occurred=datetime.now(app.TZ).isoformat(),checks={k:'issue' for k in app.CHECKS}),'Abner')
 
+    def stock_in(self,**extra):
+        data=dict(slot=1,version=0,occurred=(datetime.now(app.TZ)-timedelta(minutes=5)).isoformat(),code='RC-01',perimeter=377.0,diameter=120,condition=app.STOCK_CONDITIONS[0],notes='')
+        data.update(extra);return data
+    def test_stock_tray_has_four_empty_slots(self):
+        with app.connect() as db:rows=db.execute('SELECT * FROM stock ORDER BY slot').fetchall()
+        self.assertEqual([r['slot'] for r in rows],[1,2,3,4]);self.assertTrue(all(r['entered'] is None for r in rows))
+    def test_stock_in_and_out_keeps_history(self):
+        app.mutate('/api/stock/in',self.stock_in(),'Rafael')
+        with self.assertRaises(ValueError):app.mutate('/api/stock/in',self.stock_in(version=1),'Outro')
+        app.mutate('/api/stock/out',dict(slot=1,version=1,occurred=datetime.now(app.TZ).isoformat(),destination='Instalado no forno · posição 2'),'Davi')
+        with app.connect() as db:
+            slot=db.execute('SELECT * FROM stock WHERE slot=1').fetchone();moves=db.execute('SELECT * FROM stock_moves ORDER BY occurred').fetchall()
+        self.assertIsNone(slot['entered']);self.assertEqual(slot['version'],2)
+        self.assertEqual([m['action'] for m in moves],['entrada','saida']);self.assertEqual(moves[1]['perimeter'],377.0);self.assertEqual(moves[1]['code'],'RC-01')
+    def test_stock_validation(self):
+        for bad in [dict(perimeter=None),dict(perimeter=0),dict(perimeter='300'),dict(condition='Qualquer'),dict(slot=5),dict(version=3)]:
+            with self.assertRaises(ValueError):app.mutate('/api/stock/in',self.stock_in(**bad),'Rafael')
+        with self.assertRaises(ValueError):app.mutate('/api/stock/out',dict(slot=2,version=0,occurred=datetime.now(app.TZ).isoformat(),destination='Sucata'),'Rafael')
+
 if __name__=='__main__':unittest.main()

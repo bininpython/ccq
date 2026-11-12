@@ -411,3 +411,40 @@ tbody tr:hover td{background:var(--surface-2)}
  .crumbs span,.crumbs i{display:none}
  footer{flex-direction:column;gap:4px}
 }
+
+/* Estoque da retífica: bandeja com 4 rolos cerâmicos (vista de cima) */
+.nav-count{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#a1a1aa;padding:2px 6px;border-radius:6px;background:#1f1f23}
+.tray-scroll{overflow-x:auto;background-color:var(--surface-2);background-image:radial-gradient(var(--dots) 1px,transparent 1px);background-size:20px 20px;padding:10px 18px 6px}
+.tray-svg{display:block;width:100%;min-width:680px;height:auto;--frame:#c9c9cf;--frame-edge:#a1a1aa;--bed:#ededf0;--lane:#f7f7f8}
+:root[data-theme="dark"] .tray-svg{--frame:#3f3f46;--frame-edge:#52525b;--bed:#1c1c20;--lane:#232328}
+.tray-frame{fill:var(--frame);stroke:var(--frame-edge);stroke-width:2}
+.tray-bed{fill:var(--bed)}
+.tray-dim line,.tray-dim path{stroke:var(--text-3);stroke-width:1.5;fill:none}
+.tray-dim rect{fill:var(--surface);stroke:var(--border-strong)}
+.tray-dim text{font-family:var(--mono);font-size:12.5px;fill:var(--text-2);text-anchor:middle;letter-spacing:.04em}
+.tray-lane{cursor:pointer;outline:none}
+.lane-hit{fill:var(--lane);stroke:transparent;stroke-width:2;transition:stroke .15s,fill .15s}
+.tray-lane:hover .lane-hit,.tray-lane:focus-visible .lane-hit{stroke:var(--violet)}
+.saddle-v{stroke:#27272a;stroke-width:1.5;fill:none;opacity:.6}
+.slot-badge{fill:var(--ink);}
+.slot-num{fill:var(--ink-text);font-family:var(--mono);font-size:14px;font-weight:700;text-anchor:middle}
+.roll-shadow{fill:#000;opacity:.12}
+.roll-body{stroke:#bdb8ad;stroke-width:1.2}
+.roll-code{font-family:var(--mono);font-size:15px;font-weight:700;fill:#27272a}
+.roll-perim{font-family:var(--mono);font-size:14px;font-weight:600;fill:#3f3f46;text-anchor:middle}
+.cond-chip rect{fill:color-mix(in srgb,var(--tone) 14%,#fff);stroke:color-mix(in srgb,var(--tone) 55%,#fff)}
+.cond-chip circle{fill:var(--tone)}
+.cond-chip text{font-size:12px;font-weight:700;fill:color-mix(in srgb,var(--tone) 80%,#000)}
+.cond-chip.violet,.map-legend .violet{--tone:#7c3aed}
+.slot-empty{fill:none;stroke:var(--border-strong);stroke-width:2;stroke-dasharray:8 7}
+.tray-lane:hover .slot-empty{stroke:var(--violet)}
+.slot-empty-text{font-size:14px;font-weight:600;fill:var(--text-3);text-anchor:middle}
+.kpi.green{--tone:#16a34a}.kpi.yellow{--tone:#ca8a04}
+.move-chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600}
+.move-chip.entrada{background:color-mix(in srgb,#16a34a 12%,var(--surface));color:#15803d}
+.move-chip.saida{background:color-mix(in srgb,#f1511b 12%,var(--surface));color:#c2410c}
+:root[data-theme="dark"] .move-chip.entrada{color:#4ade80}:root[data-theme="dark"] .move-chip.saida{color:#fb923c}
+.stock-summary,.stock-notes{margin:10px 0 18px;padding:12px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:13px;color:var(--text-2)}
+.panel-foot>span:first-child svg{color:var(--text-3)}
+.badge.violet{--tone:#7c3aed}
+.slot-empty-pill{fill:var(--surface);stroke:var(--border)}

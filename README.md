@@ -16,6 +16,7 @@ Painel em React + TypeScript, **sem login e sem senha**, com identidade visual r
 - Histórico de trocas com filtros por texto, posição, turno e período (de/até).
 - Exportação em **PDF** e **Excel (.xlsx)** no padrão visual do sistema, com exatamente os registros filtrados: tabela de trocas, resumo por turno/posição/motivo e condição atual de cada posição.
 - Checklist de inspeção disponível pela API (a tela de inspeções foi retirada da interface).
+- **Estoque da retífica** (aba 04): bandeja de estoque com 4 posições para rolos cerâmicos de forno (≈ 4 m), desenhada em vista superior. Cada entrada registra posição na bandeja, identificação (opcional), perímetro, diâmetro (opcional), condição (retificado · pronto para uso, aguardando retífica ou em inspeção), data, turno automático, operador e observações. A saída registra o destino (instalado no forno, retífica externa, sucata ou outro). Todas as entradas e saídas ficam no histórico de movimentações. Funciona no servidor compartilhado (tabelas `stock` e `stock_moves`) e no modo local.
 - Kanban com etapas, identificação de quem moveu e histórico das movimentações.
 - Atualização do painel a cada 30 segundos, proteção contra versões conflitantes e validação de datas futuras.
 

@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parent.parent
 DB = os.getenv('CCQ_DB', str(ROOT / 'data' / 'ccq.sqlite3'))
 TZ = ZoneInfo('America/Sao_Paulo')
 CHECKS = ['Superfície do rolo', 'Ruído anormal', 'Vibração', 'Alinhamento da tira', 'Mancais e refrigeração']
+# Estoque da retífica: bandeja com 4 posições para rolos cerâmicos.
+STOCK_SLOTS = 4
+STOCK_CONDITIONS = ['Retificado · pronto para uso', 'Aguardando retífica', 'Em inspeção']
 
 def connect():
     db = sqlite3.connect(DB, timeout=15)
@@ -26,7 +29,11 @@ def init():
         CREATE TABLE IF NOT EXISTS inspections(id TEXT PRIMARY KEY, roll_id INTEGER NOT NULL REFERENCES rolls(id), operator TEXT NOT NULL, shift TEXT NOT NULL, occurred TEXT NOT NULL, checks TEXT NOT NULL, notes TEXT);
         CREATE TABLE IF NOT EXISTS tasks(id TEXT PRIMARY KEY, roll_id INTEGER NOT NULL REFERENCES rolls(id), title TEXT NOT NULL, status TEXT NOT NULL, created TEXT NOT NULL, updated TEXT NOT NULL, operator TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, task_id TEXT NOT NULL, operator TEXT NOT NULL, old_status TEXT, new_status TEXT NOT NULL, occurred TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS stock(slot INTEGER PRIMARY KEY, code TEXT, perimeter REAL, diameter REAL, condition TEXT, entered TEXT, operator TEXT, notes TEXT, version INTEGER NOT NULL DEFAULT 0);
+        CREATE TABLE IF NOT EXISTS stock_moves(id TEXT PRIMARY KEY, slot INTEGER NOT NULL REFERENCES stock(slot), action TEXT NOT NULL, code TEXT, perimeter REAL, diameter REAL, condition TEXT, destination TEXT, operator TEXT NOT NULL, shift TEXT NOT NULL, occurred TEXT NOT NULL, recorded TEXT NOT NULL, notes TEXT);
         ''')
+        for slot in range(1, STOCK_SLOTS + 1):
+            db.execute('INSERT OR IGNORE INTO stock(slot) VALUES(?)', (slot,))
         for i in range(5):
             db.execute('INSERT OR IGNORE INTO rolls(id,name,location) VALUES(?,?,?)', (i, f'Rolo {i}', 'Externo · entrada' if i == 0 else f'Forno · posição {i}'))
 
@@ -47,6 +54,35 @@ def occurred(data):
     if dt > datetime.now(TZ): raise ValueError('Não é permitido registrar uma data futura.')
     return dt.astimezone(TZ)
 
+def measure(data, key, limit, label, optional=False):
+    value = data.get(key)
+    if value is None and optional: return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 < value < limit: raise ValueError(f'{label} inválido.')
+    return float(value)
+
+def stock_move(db, path, data, operator):
+    slot = db.execute('SELECT * FROM stock WHERE slot=?', (data.get('slot'),)).fetchone()
+    if not slot: raise ValueError('Posição da bandeja inválida.')
+    if data.get('version') != slot['version']: raise ValueError('A bandeja foi atualizada por outro registro. Atualize a tela.')
+    dt = occurred(data)
+    notes = str(data.get('notes') or '').strip()[:2000]
+    if path == '/api/stock/in':
+        if slot['entered']: raise ValueError('Esta posição da bandeja já está ocupada.')
+        code = str(data.get('code') or '').strip()[:60]
+        perimeter = measure(data, 'perimeter', 20000, 'Perímetro')
+        diameter = measure(data, 'diameter', 10000, 'Diâmetro', optional=True)
+        condition = data.get('condition')
+        if condition not in STOCK_CONDITIONS: raise ValueError('Selecione a condição do rolo.')
+        db.execute('UPDATE stock SET code=?,perimeter=?,diameter=?,condition=?,entered=?,operator=?,notes=?,version=version+1 WHERE slot=?',(code or None,perimeter,diameter,condition,dt.isoformat(),operator,notes,slot['slot']))
+        values = ('entrada', code, perimeter, diameter, condition, None)
+    else:
+        if not slot['entered']: raise ValueError('Esta posição da bandeja está vazia.')
+        if dt < datetime.fromisoformat(slot['entered']): raise ValueError('A saída deve ser posterior à entrada do rolo.')
+        destination = required(data, 'destination', 200)
+        db.execute('UPDATE stock SET code=NULL,perimeter=NULL,diameter=NULL,condition=NULL,entered=NULL,operator=NULL,notes=NULL,version=version+1 WHERE slot=?',(slot['slot'],))
+        values = ('saida', slot['code'], slot['perimeter'], slot['diameter'], slot['condition'], destination)
+    db.execute('INSERT INTO stock_moves VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',(secrets.token_hex(12),slot['slot'],*values,operator,shift(dt),dt.isoformat(),now(),notes))
+
 def mutate(path, data, operator):
     with connect() as db:
         db.execute('BEGIN IMMEDIATE')
@@ -59,6 +95,7 @@ def mutate(path, data, operator):
             db.execute('UPDATE tasks SET status=?,updated=?,operator=? WHERE id=?',(status,now(),operator,task['id']))
             db.execute('INSERT INTO audit(task_id,operator,old_status,new_status,occurred) VALUES(?,?,?,?,?)',(task['id'],operator,task['status'],status,now()))
             return
+        if path in ('/api/stock/in', '/api/stock/out'): return stock_move(db, path, data, operator)
         roll = db.execute('SELECT * FROM rolls WHERE id=?',(data.get('roll_id'),)).fetchone()
         if not roll: raise ValueError('Posição inválida.')
         if path == '/api/replacements':
@@ -97,7 +134,7 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path.startswith('/api/'):
             if self.path != '/api/state':return self.send_json(404,{'error':'Não encontrado.'})
             with connect() as db:
-                result={table:[dict(r) for r in db.execute(f'SELECT * FROM {table}'+(' ORDER BY occurred DESC' if table in ['events','inspections','audit'] else ''))] for table in ['rolls','events','inspections','tasks','audit']}
+                result={table:[dict(r) for r in db.execute(f'SELECT * FROM {table}'+(' ORDER BY occurred DESC, recorded DESC' if table=='stock_moves' else ' ORDER BY occurred DESC' if table in ['events','inspections','audit'] else ' ORDER BY slot' if table=='stock' else ''))] for table in ['rolls','events','inspections','tasks','audit','stock','stock_moves']}
             for r in result['rolls']: r.update(days=age(r['installed']),status=color(age(r['installed'])))
             result['server_time']=now()
             return self.send_json(200,result)
