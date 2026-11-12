@@ -448,3 +448,6 @@ tbody tr:hover td{background:var(--surface-2)}
 .panel-foot>span:first-child svg{color:var(--text-3)}
 .badge.violet{--tone:#7c3aed}
 .slot-empty-pill{fill:var(--surface);stroke:var(--border)}
+.storage-line.supabase svg{color:#4ade80}
+.notice.import{flex-wrap:wrap}
+.notice.import button{font-weight:600}

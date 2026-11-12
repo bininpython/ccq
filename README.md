@@ -28,6 +28,15 @@ A página inicial traz o jogo **A Missão do Forno** (`/game/`), um jogo de plat
 
 Controles: ← → andar · ↑ ou espaço pular · E agir · C prancheta · P pausa · M som. Ponte rolante: ← → mover · ↑ ↓ gancho · E engatar/soltar · Q sair. No celular, botões na tela (melhor com o aparelho deitado).
 
+## Banco on-line (Supabase) — usado pelo site publicado
+
+O site da Vercel grava no banco Supabase do projeto **rb1-roll** (região São Paulo). Todos os computadores e celulares veem os mesmos dados: trocas de rolo, estoque da retífica e estoque RB1.
+
+- Configuração no build: `.env.production` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_KEY` (chave pública *publishable*). Sem essas variáveis (desenvolvimento local, Docker), o painel usa o servidor Python ou o modo local.
+- Segurança: as tabelas (`rolls`, `events`, `stock_slots`, `stock_log`) têm leitura pública e **nenhuma gravação direta**. Toda gravação passa pelas funções `register_replacement`, `stock_move` e `import_local`, que validam cada registro (data futura, versão do rolo, posição ocupada, perímetro, condição, destino) como o servidor Python.
+- Registros antigos do modo local: ao abrir o painel num navegador que tem dados do modo local, um aviso oferece **Enviar para o banco**. A importação só acrescenta registros, nunca apaga ou sobrescreve.
+- Inspeções e kanban continuam disponíveis apenas no servidor Python.
+
 ## Hospedagem estática (Vercel, por exemplo)
 
 ```bash

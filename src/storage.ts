@@ -1,6 +1,10 @@
 import type {State} from './main';
 const key='ccq.local.v1';
-let mode:'local'|'server'|null=null;
+let mode:'local'|'server'|'supabase'|null=null;
+// Banco on-line (Supabase): URL e chave pública vêm do build (.env.production). Sem elas, o painel usa
+// o servidor Python (/api) ou o armazenamento local do navegador.
+const env=(import.meta as unknown as {env?:Record<string,string|undefined>}).env||{};
+const SB_URL=env.VITE_SUPABASE_URL?.replace(/\/$/,''),SB_KEY=env.VITE_SUPABASE_KEY;
 let selecting:Promise<void>|null=null;
 const checks=['Superfície do rolo','Ruído anormal','Vibração','Alinhamento da tira','Mancais e refrigeração'];
 // Estoques de rolos cerâmicos (retífica e RB1), cada um com uma bandeja de 4 posições.
@@ -12,6 +16,39 @@ const emptySlot=(place:StockPlace,slot:number)=>({place,slot,code:null,perimeter
 export const storageMode=()=>mode;
 export function day(s:string){return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s))}
 export function status(days:number|null){return days===null?'unknown':days<=5?'green':days<=10?'yellow':'red'}
+function campaign(rolls:State['rolls'],now:string){for(const r of rolls){r.days=r.installed?Math.max(0,Math.round((Date.parse(day(now))-Date.parse(day(r.installed)))/86400000)):null;r.status=status(r.days)}}
+async function sb(path:string,body?:unknown){
+ const r=await fetch(SB_URL+path,{method:body===undefined?'GET':'POST',headers:{apikey:SB_KEY!,'Content-Type':'application/json',Accept:'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
+ const text=await r.text();let d:unknown=null;try{d=text?JSON.parse(text):null}catch{}
+ if(!r.ok)throw new Error((d as {message?:string}|null)?.message||'Não foi possível falar com o banco de dados. Tente atualizar.');
+ return d;
+}
+async function sbState():Promise<State>{
+ const [rolls,events,stock,moves]=await Promise.all([sb('/rest/v1/rolls?select=*&order=id'),sb('/rest/v1/events?select=*&order=occurred.desc'),sb('/rest/v1/stock_slots?select=*&order=place,slot'),sb('/rest/v1/stock_log?select=*&order=occurred.desc,recorded.desc')]) as [State['rolls'],State['events'],State['stock'],State['stock_moves']];
+ const now=new Date().toISOString();campaign(rolls,now);
+ return {rolls,events,stock,stock_moves:moves,inspections:[],tasks:[],audit:[],server_time:now};
+}
+async function sbChange(path:string,body:Record<string,unknown>){
+ if(path==='replacements')return sb('/rest/v1/rpc/register_replacement',{p:body});
+ if(path==='stock/in'||path==='stock/out')return sb('/rest/v1/rpc/stock_move',{p:{...body,action:path==='stock/in'?'entrada':'saida'}});
+ throw new Error('Função não disponível no banco on-line.');
+}
+// Registros gravados antes no modo local deste navegador, ainda não enviados ao banco on-line.
+const importedKey='ccq.local.imported';
+export function localPending(){
+ try{
+  if(localStorage.getItem(importedKey))return 0;
+  const raw=localStorage.getItem(key);if(!raw)return 0;
+  const d=JSON.parse(raw);return (d.events?.length||0)+(d.stock_moves?.length||0);
+ }catch{return 0}
+}
+export async function importLocal(){
+ const d=JSON.parse(localStorage.getItem(key)||'{}');
+ const r=await sb('/rest/v1/rpc/import_local',{p:{events:d.events||[],rolls:d.rolls||[],stock:d.stock||[],stock_moves:d.stock_moves||[]}}) as {events:number;moves:number};
+ localStorage.setItem(importedKey,new Date().toISOString());
+ return r;
+}
+export function dismissLocal(){try{localStorage.setItem(importedKey,'dispensado')}catch{}}
 function read():State{
  const raw=localStorage.getItem(key);
  const state:State=raw?JSON.parse(raw):{rolls:Array.from({length:5},(_,id)=>({id,name:`Rolo ${id}`,location:id?`Forno · posição ${id}`:'Externo · entrada',serial:null,diameter:null,installed:null,version:0,days:null,status:'unknown'})),events:[],tasks:[],inspections:[],audit:[],server_time:new Date().toISOString()};
@@ -24,7 +61,7 @@ function read():State{
  state.stock.sort((a,b)=>a.place.localeCompare(b.place)||a.slot-b.slot);
  if(!Array.isArray(state.rolls)||!Array.isArray(state.events)||!Array.isArray(state.tasks)||!Array.isArray(state.inspections)||!Array.isArray(state.audit))throw new Error('Dados locais inválidos. Preserve o armazenamento e procure suporte.');
  const now=new Date().toISOString();
- for(const r of state.rolls){r.days=r.installed?Math.max(0,Math.round((Date.parse(day(now))-Date.parse(day(r.installed)))/86400000)):null;r.status=status(r.days)}
+ campaign(state.rolls,now);
  state.server_time=now;return state;
 }
 function text(b:Record<string,unknown>,k:string,max=2000){const v=b[k];if(typeof v!=='string'||!v.trim()||v.length>max)throw new Error(`Preencha corretamente: ${k}.`);return v.trim()}
@@ -85,6 +122,7 @@ function change(path:string,b:Record<string,unknown>){
 }
 async function selectMode(){
  if(mode)return;
+ if(SB_URL&&SB_KEY){mode='supabase';return}
  if(!selecting)selecting=(async()=>{
   const r=await fetch('/api/state',{signal:AbortSignal.timeout(8000)});
   if(r.status===404||r.status===405||((r.ok)&&!r.headers.get('content-type')?.includes('application/json'))){mode='local';return}
@@ -95,6 +133,7 @@ async function selectMode(){
 }
 export async function api(path:string,body?:unknown):Promise<any>{
  try{await selectMode()}catch(e){if(e instanceof Error && (e.name==='TimeoutError'||e instanceof TypeError))throw new Error('Sem conexão com o servidor. Tente atualizar.');throw e}
+ if(mode==='supabase')return path==='state'?sbState():sbChange(path,body as Record<string,unknown>);
  if(mode==='local'){
   if(path==='state')return read();
   if(!navigator.locks)throw new Error('Use um navegador atualizado para salvar com segurança.');
