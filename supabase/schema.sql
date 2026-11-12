@@ -84,12 +84,37 @@ begin
   return jsonb_build_object('ok',true);
 end $$;
 
--- Entrada e saída dos estoques (retífica e RB1).
+-- Senha de 4 dígitos para lançar rolos no estoque da retífica: guardada só como hash bcrypt,
+-- num schema que a API não expõe. Após 5 erros em 15 minutos, novas tentativas ficam bloqueadas.
+-- Troque 0000 pela senha desejada (não grave a senha real neste arquivo). Para trocar depois:
+--   update private.settings set value = extensions.crypt('NOVA', extensions.gen_salt('bf', 10)) where key = 'retifica_pin';
+create extension if not exists pgcrypto with schema extensions;
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+create table private.settings(key text primary key, value text not null);
+create table private.pin_attempts(at timestamptz not null default now());
+insert into private.settings values('retifica_pin', extensions.crypt('0000', extensions.gen_salt('bf', 10)));
+
+-- Entrada e saída dos estoques (retífica e RB1). Entrada na retífica exige a senha.
 create function public.stock_move(p jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
-declare s public.stock_slots; v_op text := public.rb1_text(p,'operator',100,'operador'); v_t timestamptz := public.rb1_when(p);
+declare s public.stock_slots; v_op text; v_t timestamptz;
         v_act text := p->>'action'; v_notes text := left(btrim(coalesce(p->>'notes','')),2000);
-        v_code text; v_per numeric; v_d numeric; v_cond text; v_dest text;
+        v_code text; v_per numeric; v_d numeric; v_cond text; v_dest text; v_hash text;
 begin
+  -- Erros de senha ficam registrados (por isso retorna {ok:false} em vez de lançar exceção).
+  if p->>'place' = 'retifica' and v_act = 'entrada' then
+    delete from private.pin_attempts where at < now() - interval '1 day';
+    if (select count(*) from private.pin_attempts where at > now() - interval '15 minutes') >= 5 then
+      return jsonb_build_object('ok',false,'error','Muitas tentativas com senha errada. Aguarde 15 minutos.');
+    end if;
+    select value into v_hash from private.settings where key='retifica_pin';
+    if coalesce(p->>'pin','') !~ '^\d{4}$' or extensions.crypt(p->>'pin', v_hash) <> v_hash then
+      insert into private.pin_attempts default values;
+      return jsonb_build_object('ok',false,'error','Senha da retífica incorreta.');
+    end if;
+    delete from private.pin_attempts;
+  end if;
+  v_op := public.rb1_text(p,'operator',100,'operador'); v_t := public.rb1_when(p);
   if coalesce(p->>'place','') not in ('retifica','rb1') then raise exception 'Estoque inválido.'; end if;
   select * into s from public.stock_slots where place=p->>'place' and slot=(p->>'slot')::int for update;
   if not found then raise exception 'Posição da bandeja inválida.'; end if;
@@ -118,6 +143,7 @@ begin
 end $$;
 
 -- Importação dos registros do modo local (navegador): só acrescenta, nunca sobrescreve.
+-- Não ocupa a bandeja da retífica (ela exige a senha no lançamento).
 create function public.import_local(p jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
 declare e jsonb; x jsonb; n_events int := 0; n_moves int := 0; n_rolls int := 0; n_slots int := 0; k int;
 begin
@@ -148,7 +174,7 @@ begin
       update public.stock_slots set code=left(x->>'code',60), perimeter=(x->>'perimeter')::numeric,
         diameter=case when jsonb_typeof(x->'diameter')='number' then (x->>'diameter')::numeric end,
         condition=left(x->>'condition',60), entered=(x->>'entered')::timestamptz, operator=left(x->>'operator',100), notes=left(x->>'notes',2000), version=version+1
-      where place=coalesce(x->>'place','retifica') and slot=(x->>'slot')::int and entered is null;
+      where place=coalesce(x->>'place','retifica') and place <> 'retifica' and slot=(x->>'slot')::int and entered is null;
       get diagnostics k = row_count; n_slots := n_slots + k;
     end if;
   end loop;

@@ -21,6 +21,8 @@ async function sb(path:string,body?:unknown){
  const r=await fetch(SB_URL+path,{method:body===undefined?'GET':'POST',headers:{apikey:SB_KEY!,'Content-Type':'application/json',Accept:'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
  const text=await r.text();let d:unknown=null;try{d=text?JSON.parse(text):null}catch{}
  if(!r.ok)throw new Error((d as {message?:string}|null)?.message||'Não foi possível falar com o banco de dados. Tente atualizar.');
+ // Recusas registradas no banco (ex.: senha da retífica) voltam como {ok:false,error}.
+ if(d&&typeof d==='object'&&(d as {ok?:boolean}).ok===false)throw new Error((d as {error?:string}).error||'Registro recusado.');
  return d;
 }
 async function sbState():Promise<State>{

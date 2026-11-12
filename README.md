@@ -35,6 +35,7 @@ O site da Vercel grava no banco Supabase do projeto **rb1-roll** (região São P
 - Configuração no build: `.env.production` com `VITE_SUPABASE_URL` e `VITE_SUPABASE_KEY` (chave pública *publishable*). Sem essas variáveis (desenvolvimento local, Docker), o painel usa o servidor Python ou o modo local.
 - Segurança: as tabelas (`rolls`, `events`, `stock_slots`, `stock_log`) têm leitura pública e **nenhuma gravação direta**. Toda gravação passa pelas funções `register_replacement`, `stock_move` e `import_local`, que validam cada registro (data futura, versão do rolo, posição ocupada, perímetro, condição, destino) como o servidor Python.
 - Registros antigos do modo local: ao abrir o painel num navegador que tem dados do modo local, um aviso oferece **Enviar para o banco**. A importação só acrescenta registros, nunca apaga ou sobrescreve.
+- **Senha da retífica**: lançar rolo no estoque da retífica exige uma senha de 4 dígitos, conferida no banco (hash bcrypt em `private.settings`, fora da API). Após 5 erros em 15 minutos, o lançamento fica bloqueado por 15 minutos. Saídas e o estoque RB1 não pedem senha. A senha não fica no repositório; para trocá-la, veja o comentário em `supabase/schema.sql`.
 - Inspeções e kanban continuam disponíveis apenas no servidor Python.
 
 ## Hospedagem estática (Vercel, por exemplo)

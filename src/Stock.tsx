@@ -79,7 +79,7 @@ export function StockPage({place,state,onSelect,onLaunch,f}:{place:StockPlace;st
  </>;
 }
 
-type ModalCtx={place:StockPlace;kind:string;slot:number;state:State|null;operator:string;setOperator:(v:string)=>void;date:string;setDate:(v:string)=>void;max:string;shiftLabel:(d:string)=>string;busy:boolean;error:string;submit:(path:string,payload:unknown)=>void;open:(kind:string,slot:number)=>void;close:()=>void;rolls:{id:number;name:string;location:string}[];f:Fmt};
+type ModalCtx={pinRequired:boolean;place:StockPlace;kind:string;slot:number;state:State|null;operator:string;setOperator:(v:string)=>void;date:string;setDate:(v:string)=>void;max:string;shiftLabel:(d:string)=>string;busy:boolean;error:string;submit:(path:string,payload:unknown)=>void;open:(kind:string,slot:number)=>void;close:()=>void;rolls:{id:number;name:string;location:string}[];f:Fmt};
 
 export function StockModal(c:ModalCtx){
  const stock=(c.state?.stock||[]).filter(x=>x.place===c.place),slot=stock.find(s=>s.slot===c.slot),empty=stock.filter(s=>!s.entered),P=PLACES[c.place];
@@ -103,11 +103,13 @@ export function StockModal(c:ModalCtx){
    {when}<label>Observações · opcional<textarea name="notes" maxLength={2000} placeholder="Ex.: instalado na troca do turno, condição da superfície…"/></label>{footer('Registrar saída')}</form>;
  }
  const initial=slot&&!slot.entered?slot.slot:empty[0]?.slot;
- const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));const target=stock.find(s=>s.slot===Number(f.slot));c.submit('stock/in',{place:c.place,operator:c.operator,slot:Number(f.slot),version:target?.version,code:f.code,perimeter:Number(f.perimeter),diameter:f.diameter?Number(f.diameter):null,condition:f.condition,occurred:occurred(),notes:f.notes})};
+ const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));const target=stock.find(s=>s.slot===Number(f.slot));c.submit('stock/in',{place:c.place,...(f.pin?{pin:String(f.pin)}:{}),operator:c.operator,slot:Number(f.slot),version:target?.version,code:f.code,perimeter:Number(f.perimeter),diameter:f.diameter?Number(f.diameter):null,condition:f.condition,occurred:occurred(),notes:f.notes})};
  if(!empty.length)return <>{head(P.eyebrow,'Bandeja cheia')}<p>As 4 posições estão ocupadas. Retire um rolo antes de lançar outro.</p><div className="modal-actions"><button className="primary" onClick={c.close}>Entendi</button></div></>;
  return <form onSubmit={send}>{head(P.eyebrow+' · ENTRADA','Lançar rolo no estoque')}
   {who}<div className="form-row"><label>Posição na bandeja<select name="slot" defaultValue={initial}>{empty.map(s=><option key={s.slot} value={s.slot}>Posição {s.slot}</option>)}</select></label><label>Identificação · opcional<input name="code" maxLength={60} placeholder="Ex.: RC-012"/></label></div>
   <div className="form-row"><label>Perímetro (mm)<input name="perimeter" type="number" required min="1" max="19999" step="0.1" placeholder="Conforme o rolo"/></label><label>Diâmetro (mm) · opcional<input name="diameter" type="number" min="1" max="9999" step="0.1" placeholder="Ex.: 120"/></label></div>
   <label>Condição<select name="condition" required defaultValue={STOCK_CONDITIONS[0]}>{STOCK_CONDITIONS.map(s=><option key={s}>{s}</option>)}</select></label>
-  {when}<label>Observações · opcional<textarea name="notes" maxLength={2000} placeholder="Ex.: retificado, superfície sem trincas…"/></label>{footer('Lançar no estoque')}</form>;
+  {when}<label>Observações · opcional<textarea name="notes" maxLength={2000} placeholder="Ex.: retificado, superfície sem trincas…"/></label>
+  {c.pinRequired&&c.place==='retifica'&&<label className="pin-field">Senha da retífica<input name="pin" type="password" inputMode="numeric" autoComplete="off" required pattern="[0-9]{4}" minLength={4} maxLength={4} placeholder="••••" title="Senha de 4 dígitos"/><small>Somente a retífica pode lançar rolos neste estoque.</small></label>}
+  {footer('Lançar no estoque')}</form>;
 }

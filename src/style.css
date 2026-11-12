@@ -451,3 +451,5 @@ tbody tr:hover td{background:var(--surface-2)}
 .storage-line.supabase svg{color:#4ade80}
 .notice.import{flex-wrap:wrap}
 .notice.import button{font-weight:600}
+.pin-field input{max-width:160px;font-family:var(--mono);font-size:20px;letter-spacing:.5em}
+.pin-field small{display:block;margin-top:6px;font-size:12px;color:var(--text-3);font-weight:400}
