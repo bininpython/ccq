@@ -70,7 +70,7 @@ small{color:var(--text-3);font-size:12px}
 
 /* Shell */
 .app{display:flex;min-height:100vh;background:var(--bg);color:var(--text)}
-aside{width:256px;flex:none;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;background:#0a0a0a;color:#e4e4e7;border-right:1px solid #1c1c1f}
+aside{width:256px;transition:width .2s ease;flex:none;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;background:#0a0a0a;color:#e4e4e7;border-right:1px solid #1c1c1f}
 :root[data-theme="dark"] aside{background:#050506}
 .brand{display:flex;align-items:center;gap:12px;padding:18px 18px 17px;border-bottom:1px solid #1c1c1f}
 .logo{width:36px;height:36px;flex:none;border-radius:9px;background:#fff;display:grid;place-items:center}
@@ -381,7 +381,27 @@ tbody tr:hover td{background:var(--surface-2)}
  .page-header{flex-direction:column;align-items:flex-start}
  h1{font-size:44px}
 }
+/* Barra lateral recolhida: só ícones (telas largas) */
+.brand-text{flex:1;min-width:0}
+.aside-toggle{flex:none;width:30px;height:30px;border-radius:8px;color:#8b8b93}
+.aside-toggle:hover{background:#1a1a1d;color:#fff}
+@media(min-width:901px){
+ aside.collapsed{width:72px;overflow-x:hidden}
+ aside.collapsed .brand{flex-direction:column;gap:10px;padding:16px 0 12px}
+ aside.collapsed .brand-text,aside.collapsed .nav-text,aside.collapsed .nav-index,aside.collapsed .nav-count,aside.collapsed .nav-dot,aside.collapsed .cmd-text,aside.collapsed .command-button kbd,aside.collapsed .aside-label,aside.collapsed .quick-body,aside.collapsed .storage-text,aside.collapsed .shift-card div,aside.collapsed .shift-card button{display:none}
+ aside.collapsed nav{padding:12px 12px 8px}
+ aside.collapsed nav button{justify-content:center;padding:0}
+ aside.collapsed nav button.active:before{left:-12px}
+ aside.collapsed .command-button{margin:6px 12px 0;padding:0;justify-content:center}
+ aside.collapsed .quick{margin:16px 8px 12px}
+ aside.collapsed .quick-head{justify-content:center;padding:0 0 6px}
+ aside.collapsed .quick-item{flex-direction:column;gap:4px;padding:8px 0}
+ aside.collapsed .quick-days{font-size:10.5px}
+ aside.collapsed .storage-line{justify-content:center;padding:14px 0}
+ aside.collapsed .shift-card{justify-content:center;padding:14px 0 18px}
+}
 @media(max-width:900px){
+ .aside-toggle{display:none}
  .app{flex-direction:column}
  aside{position:sticky;top:0;z-index:30;width:100%;height:auto;overflow:visible;border-right:0;border-bottom:1px solid #1c1c1f}
  .brand{padding:12px 16px;border-bottom:0}
@@ -453,3 +473,4 @@ tbody tr:hover td{background:var(--surface-2)}
 .notice.import button{font-weight:600}
 .pin-field input{max-width:160px;font-family:var(--mono);font-size:20px;letter-spacing:.5em}
 .pin-field small{display:block;margin-top:6px;font-size:12px;color:var(--text-3);font-weight:400}
+aside>*{flex-shrink:0}
