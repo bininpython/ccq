@@ -87,4 +87,25 @@ class TestCCQ(unittest.TestCase):
             with self.assertRaises(ValueError):app.mutate('/api/stock/in',self.stock_in(**bad),'Rafael')
         with self.assertRaises(ValueError):app.mutate('/api/stock/out',dict(place='retifica',slot=2,version=0,occurred=datetime.now(app.TZ).isoformat(),destination='Sucata'),'Rafael')
 
+    def test_full_flow_retifica_rb1_forno(self):
+        app.mutate('/api/stock/in',self.stock_in(code='RC-50',perimeter=380.5,diameter=121),'Retífica')
+        app.mutate('/api/stock/out',dict(place='retifica',slot=1,version=1,occurred=(datetime.now(app.TZ)-timedelta(minutes=3)).isoformat(),destination='Transferido para o estoque RB1',transfer_slot=2,transfer_version=0),'Retífica')
+        with app.connect() as db:
+            rb1=db.execute("SELECT * FROM stock_slots WHERE place='rb1' AND slot=2").fetchone()
+            self.assertEqual((rb1['code'],rb1['perimeter']),('RC-50',380.5))
+        data=self.replacement();data['roll_id']=2;data.pop('serial');data.pop('diameter');data.update(occurred=(datetime.now(app.TZ)-timedelta(minutes=1)).isoformat(),stock=dict(place='rb1',slot=2,version=1),removed_dest='Enviado para a retífica')
+        app.mutate('/api/replacements',data,'Davi')
+        with app.connect() as db:
+            roll=db.execute('SELECT * FROM rolls WHERE id=2').fetchone();ev=db.execute('SELECT * FROM events').fetchone()
+            empty=db.execute("SELECT entered FROM stock_slots WHERE place='rb1' AND slot=2").fetchone()[0]
+            dests=[r[0] for r in db.execute("SELECT destination FROM stock_log WHERE action='saida' ORDER BY occurred")]
+        self.assertEqual((roll['serial'],roll['perimeter'],roll['diameter']),('RC-50',380.5,121));self.assertIsNone(empty)
+        self.assertEqual((ev['source'],ev['removed_dest'],ev['perimeter']),('Estoque RB1 · posição 2','Enviado para a retífica',380.5))
+        self.assertEqual(dests,['Transferido para o estoque RB1 · posição 2','Instalado no forno · Rolo 2 (Forno · posição 2)'])
+        with self.assertRaises(ValueError):app.mutate('/api/replacements',dict(data,version=1,occurred=datetime.now(app.TZ).isoformat(),stock=dict(place='rb1',slot=2,version=2)),'Davi')
+    def test_replacement_rejects_stock_not_ready(self):
+        app.mutate('/api/stock/in',self.stock_in(place='rb1',condition='Aguardando retífica'),'Davi')
+        data=self.replacement(stock=dict(place='rb1',slot=1,version=1));data['roll_id']=1
+        with self.assertRaises(ValueError):app.mutate('/api/replacements',data,'Davi')
+
 if __name__=='__main__':unittest.main()

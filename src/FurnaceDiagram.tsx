@@ -1,7 +1,7 @@
 import type {KeyboardEvent} from 'react';
 import {FurnaceFire} from './FurnaceFire';
 
-type DiagramRoll={id:number;name:string;days:number|null;diameter:number|null;status:string};
+type DiagramRoll={id:number;name:string;days:number|null;diameter:number|null;perimeter?:number|null;status:string};
 
 // Schematic side view. Everything shares one viewBox, so the strip always rests on top of the rolls,
 // and the flames live in a separate heating band below them so they never cover a roll.
@@ -52,7 +52,7 @@ export function FurnaceDiagram({rolls,animated,onSelect}:{rolls:DiagramRoll[];an
    {rolls.map(r=><button key={r.id} className={'roll-caption '+r.status} style={{left:pct(rollX(r.id),W)}} onClick={()=>onSelect(r.id)} tabIndex={-1}>
     <strong>{r.name}</strong>
     <b><i/>{r.days===null?'Sem registro':r.days+(r.days===1?' dia':' dias')+' em uso'}</b>
-    <em>{r.diameter?<>Ø {fmt(r.diameter)}<span>·</span>P {fmt(Math.round(Math.PI*r.diameter))} mm</>:'Ø / perímetro —'}</em>
+    <em>{r.diameter||r.perimeter?<>Ø {r.diameter?fmt(r.diameter):'—'}<span>·</span>P {fmt(r.perimeter||Math.round(Math.PI*(r.diameter||0)))} mm</>:'Ø / perímetro —'}</em>
    </button>)}
   </div>
  </div></div>;

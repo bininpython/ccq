@@ -44,3 +44,17 @@ test('estoque RB1 independente e migração da primeira versão',async()=>{
  const raw=JSON.parse(memory.get('ccq.local.v1'));raw.stock=[{slot:3,code:'OLD',perimeter:370,diameter:null,condition:'Em inspeção',entered:occurred,operator:'Ana',notes:'',version:1}];raw.stock_moves=[{id:'m1',slot:3,action:'entrada',code:'OLD',perimeter:370,operator:'Ana',shift:'TM',occurred,recorded:occurred}];memory.set('ccq.local.v1',JSON.stringify(raw));
  s=await api('state');assert.equal(s.stock.length,8);assert.equal(s.stock.find(x=>x.place==='retifica'&&x.slot===3).code,'OLD');assert.equal(s.stock_moves[0].place,'retifica');
 });
+test('fluxo completo: retífica → RB1 → forno',async()=>{
+ let s=await api('state');const ret=s.stock.find(x=>x.place==='retifica'&&x.slot===4),rb1=s.stock.find(x=>x.place==='rb1'&&x.slot===3);
+ const t0=Date.now()-300000,iso=m=>new Date(t0+m*60000).toISOString();
+ await api('stock/in',{place:'retifica',slot:4,version:ret.version,operator:'Retífica',occurred:iso(0),code:'RC-77',perimeter:379.5,diameter:121,condition:'Retificado · pronto para uso'});
+ await api('stock/out',{place:'retifica',slot:4,version:ret.version+1,operator:'Retífica',occurred:iso(1),destination:'Transferido para o estoque RB1',transfer_slot:3,transfer_version:rb1.version});
+ s=await api('state');assert.equal(s.stock.find(x=>x.place==='rb1'&&x.slot===3).code,'RC-77');assert.equal(s.stock.find(x=>x.place==='retifica'&&x.slot===4).entered,null);
+ const roll=s.rolls.find(r=>r.id===4);
+ await api('replacements',{roll_id:4,operator:'Davi',version:roll.version,occurred:iso(2),reason:'Troca preventiva',removed_dest:'Enviado para a retífica',stock:{place:'rb1',slot:3,version:rb1.version+1}});
+ s=await api('state');const r4=s.rolls.find(r=>r.id===4);
+ assert.equal(r4.serial,'RC-77');assert.equal(r4.perimeter,379.5);assert.equal(s.stock.find(x=>x.place==='rb1'&&x.slot===3).entered,null);
+ assert.equal(s.events[0].source,'Estoque RB1 · posição 3');assert.equal(s.events[0].removed_dest,'Enviado para a retífica');
+ assert.match(s.stock_moves[0].destination,/^Instalado no forno · Rolo 4/);
+ await assert.rejects(()=>api('replacements',{roll_id:4,operator:'Davi',version:r4.version,occurred:new Date().toISOString(),reason:'x',stock:{place:'rb1',slot:3,version:rb1.version+2}}));
+});

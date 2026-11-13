@@ -4,11 +4,12 @@
 
 create table public.rolls(
   id int primary key, name text not null, location text not null, serial text,
-  diameter numeric, installed timestamptz, version int not null default 0);
+  diameter numeric, perimeter numeric, installed timestamptz, version int not null default 0);
 create table public.events(
   id text primary key default gen_random_uuid()::text, roll_id int not null references public.rolls(id),
   operator text not null, shift text not null, occurred timestamptz not null, recorded timestamptz not null default now(),
-  reason text not null, serial text not null default '', old_serial text, diameter numeric, notes text not null default '');
+  reason text not null, serial text not null default '', old_serial text, diameter numeric, notes text not null default '',
+  perimeter numeric, source text, removed_dest text);  -- source: estoque de origem do rolo novo; removed_dest: destino do rolo retirado
 create index events_occurred_idx on public.events(occurred desc);
 create index events_roll_idx on public.events(roll_id);
 create table public.stock_slots(
@@ -68,19 +69,41 @@ begin
   return v;
 end $$;
 
--- Troca de rolo do forno.
+-- Troca de rolo do forno: o rolo novo sai de uma bandeja de estoque (somente pronto para uso)
+-- na mesma transação, ou é informado manualmente ("Fora do estoque").
 create function public.register_replacement(p jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
-declare r public.rolls; v_op text := public.rb1_text(p,'operator',100,'operador'); v_t timestamptz := public.rb1_when(p);
-        v_reason text := public.rb1_text(p,'reason',200,'motivo'); v_d numeric := public.rb1_measure(p,'diameter',10000,'Diâmetro',true);
-        v_serial text := left(btrim(coalesce(p->>'serial','')),100);
+declare r public.rolls; s public.stock_slots; v_op text := public.rb1_text(p,'operator',100,'operador'); v_t timestamptz := public.rb1_when(p);
+        v_reason text := public.rb1_text(p,'reason',200,'motivo'); v_d numeric; v_per numeric; v_code text; v_src text; v_dest text;
+        v_notes text := left(coalesce(p->>'notes',''),2000);
 begin
   select * into r from public.rolls where id = (p->>'roll_id')::int for update;
   if not found then raise exception 'Posição inválida.'; end if;
   if (p->>'version')::int is distinct from r.version then raise exception 'Este rolo foi atualizado. Recarregue antes de registrar.'; end if;
   if r.installed is not null and v_t <= r.installed then raise exception 'A troca deve ser posterior à última instalação.'; end if;
-  insert into public.events(roll_id,operator,shift,occurred,reason,serial,old_serial,diameter,notes)
-    values(r.id,v_op,public.rb1_shift(v_t),v_t,v_reason,v_serial,r.serial,v_d,left(coalesce(p->>'notes',''),2000));
-  update public.rolls set installed=v_t, serial=nullif(v_serial,''), diameter=v_d, version=version+1 where id=r.id;
+  v_dest := nullif(left(btrim(coalesce(p->>'removed_dest','')),200),'');
+  if jsonb_typeof(p->'stock') = 'object' then
+    if coalesce(p->'stock'->>'place','') not in ('retifica','rb1') then raise exception 'Estoque inválido.'; end if;
+    select * into s from public.stock_slots where place=p->'stock'->>'place' and slot=(p->'stock'->>'slot')::int for update;
+    if not found then raise exception 'Posição do estoque inválida.'; end if;
+    if (p->'stock'->>'version')::int is distinct from s.version then raise exception 'O estoque foi atualizado por outro registro. Atualize a tela.'; end if;
+    if s.entered is null then raise exception 'Não há rolo nesta posição do estoque.'; end if;
+    if s.condition is distinct from 'Retificado · pronto para uso' then raise exception 'Este rolo do estoque não está pronto para uso.'; end if;
+    if v_t < s.entered then raise exception 'A troca deve ser posterior à entrada do rolo no estoque.'; end if;
+    v_code := s.code; v_per := s.perimeter; v_d := s.diameter;
+    v_src := case s.place when 'rb1' then 'Estoque RB1' else 'Estoque da retífica' end || ' · posição ' || s.slot;
+    update public.stock_slots set code=null, perimeter=null, diameter=null, condition=null, entered=null, operator=null, notes=null, version=version+1
+      where place=s.place and slot=s.slot;
+    insert into public.stock_log(place,slot,action,code,perimeter,diameter,condition,destination,operator,shift,occurred,notes)
+      values(s.place,s.slot,'saida',s.code,s.perimeter,s.diameter,s.condition,'Instalado no forno · '||r.name||' ('||r.location||')',v_op,public.rb1_shift(v_t),v_t,'Saída automática pela troca do rolo');
+  else
+    v_code := nullif(left(btrim(coalesce(p->>'serial','')),100),'');
+    v_d := public.rb1_measure(p,'diameter',10000,'Diâmetro',true);
+    v_per := public.rb1_measure(p,'perimeter',20000,'Perímetro',true);
+    v_src := 'Fora do estoque';
+  end if;
+  insert into public.events(roll_id,operator,shift,occurred,reason,serial,old_serial,diameter,perimeter,source,removed_dest,notes)
+    values(r.id,v_op,public.rb1_shift(v_t),v_t,v_reason,coalesce(v_code,''),r.serial,v_d,v_per,v_src,v_dest,v_notes);
+  update public.rolls set installed=v_t, serial=v_code, diameter=v_d, perimeter=v_per, version=version+1 where id=r.id;
   return jsonb_build_object('ok',true);
 end $$;
 
@@ -135,6 +158,21 @@ begin
     if s.entered is null then raise exception 'Esta posição da bandeja está vazia.'; end if;
     if v_t < s.entered then raise exception 'A saída deve ser posterior à entrada do rolo.'; end if;
     v_dest := public.rb1_text(p,'destination',200,'destino');
+    -- Transferência retífica → RB1: o rolo entra na posição livre escolhida, com os mesmos dados.
+    if s.place = 'retifica' and v_dest = 'Transferido para o estoque RB1' then
+      declare t public.stock_slots;
+      begin
+        select * into t from public.stock_slots where place='rb1' and slot=(p->>'transfer_slot')::int for update;
+        if not found then raise exception 'Escolha a posição livre no estoque RB1.'; end if;
+        if (p->>'transfer_version')::int is distinct from t.version then raise exception 'O estoque RB1 foi atualizado por outro registro. Atualize a tela.'; end if;
+        if t.entered is not null then raise exception 'A posição escolhida no estoque RB1 já está ocupada.'; end if;
+        update public.stock_slots set code=s.code, perimeter=s.perimeter, diameter=s.diameter, condition=s.condition, entered=v_t, operator=v_op,
+          notes='Transferido da retífica · posição '||s.slot, version=version+1 where place='rb1' and slot=t.slot;
+        insert into public.stock_log(place,slot,action,code,perimeter,diameter,condition,operator,shift,occurred,notes)
+          values('rb1',t.slot,'entrada',s.code,s.perimeter,s.diameter,s.condition,v_op,public.rb1_shift(v_t),v_t,'Transferido da retífica · posição '||s.slot);
+        v_dest := 'Transferido para o estoque RB1 · posição '||t.slot;
+      end;
+    end if;
     update public.stock_slots set code=null, perimeter=null, diameter=null, condition=null, entered=null, operator=null, notes=null, version=version+1
       where place=s.place and slot=s.slot;
     insert into public.stock_log(place,slot,action,code,perimeter,diameter,condition,destination,operator,shift,occurred,notes)

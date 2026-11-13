@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import type {FormEvent,KeyboardEvent,ReactNode} from 'react';
 import {ArrowDownToLine,ArrowUpFromLine,Check,PackagePlus,Ruler} from 'lucide-react';
 import {STOCK_CONDITIONS,type StockPlace} from './storage';
@@ -95,13 +96,7 @@ export function StockModal(c:ModalCtx){
    {slot.notes&&<p className="stock-notes">{slot.notes}</p>}
    <div className="modal-actions"><button className="secondary" onClick={c.close}>Fechar</button><button className="primary" onClick={()=>c.open('stock-out',slot.slot)}><ArrowUpFromLine size={17}/>Retirar da bandeja</button></div></>;
  }
- if(c.kind==='stock-out'&&slot?.entered){
-  const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));c.submit('stock/out',{place:c.place,operator:c.operator,slot:slot.slot,version:slot.version,destination:f.destination,occurred:occurred(),notes:f.notes})};
-  return <form onSubmit={send}>{head(P.eyebrow+' · SAÍDA','Retirar rolo da bandeja')}
-   <p className="stock-summary">Posição {slot.slot} · {slot.code||'sem identificação'} · perímetro {c.f.num(slot.perimeter!)} mm</p>
-   {who}<label>Destino do rolo<select name="destination" required defaultValue=""><option value="" disabled>Selecione o destino</option>{c.rolls.map(r=><option key={r.id}>{`Instalado no forno · ${r.name} (${r.location})`}</option>)}{P.destinations.map(d=><option key={d}>{d}</option>)}</select></label>
-   {when}<label>Observações · opcional<textarea name="notes" maxLength={2000} placeholder="Ex.: instalado na troca do turno, condição da superfície…"/></label>{footer('Registrar saída')}</form>;
- }
+ if(c.kind==='stock-out'&&slot?.entered)return <StockOutForm c={c} slot={slot} who={who} when={when} footer={footer} head={head} occurred={occurred}/>;
  const initial=slot&&!slot.entered?slot.slot:empty[0]?.slot;
  const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));const target=stock.find(s=>s.slot===Number(f.slot));c.submit('stock/in',{place:c.place,...(f.pin?{pin:String(f.pin)}:{}),operator:c.operator,slot:Number(f.slot),version:target?.version,code:f.code,perimeter:Number(f.perimeter),diameter:f.diameter?Number(f.diameter):null,condition:f.condition,occurred:occurred(),notes:f.notes})};
  if(!empty.length)return <>{head(P.eyebrow,'Bandeja cheia')}<p>As 4 posições estão ocupadas. Retire um rolo antes de lançar outro.</p><div className="modal-actions"><button className="primary" onClick={c.close}>Entendi</button></div></>;
@@ -112,4 +107,39 @@ export function StockModal(c:ModalCtx){
   {when}<label>Observações · opcional<textarea name="notes" maxLength={2000} placeholder="Ex.: retificado, superfície sem trincas…"/></label>
   {c.pinRequired&&c.place==='retifica'&&<label className="pin-field">Senha da retífica<input name="pin" type="password" inputMode="numeric" autoComplete="off" required pattern="[0-9]{4}" minLength={4} maxLength={4} placeholder="••••" title="Senha de 4 dígitos"/><small>Somente a retífica pode lançar rolos neste estoque.</small></label>}
   {footer('Lançar no estoque')}</form>;
+}
+
+// Origem do rolo novo na troca do forno: rolos prontos dos estoques RB1 e retífica, ou fora do estoque.
+export const REMOVED_DEST=['Enviado para a retífica','Mantido em análise','Sucata / descarte','Outro'];
+export function readyStock(state:State|null){
+ const order=(p:string)=>p==='rb1'?0:1;
+ return (state?.stock||[]).filter(s=>s.entered).sort((a,b)=>order(a.place)-order(b.place)||a.slot-b.slot);
+}
+export const stockKey=(s:StockSlot)=>s.place+':'+s.slot;
+export function ReplacementSource({state,value,onChange,diam,setDiam,f}:{state:State|null;value:string;onChange:(v:string)=>void;diam:string;setDiam:(v:string)=>void;f:Fmt}){
+ const all=readyStock(state),sel=all.find(s=>stockKey(s)===value);
+ const label=(s:StockSlot)=>`Posição ${s.slot} · ${s.code||'sem identificação'} · P ${f.num(s.perimeter!)} mm${s.condition===STOCK_CONDITIONS[0]?'':' · '+(COND[s.condition||'']?.short||s.condition)}`;
+ return <>
+  <label>Rolo novo · do estoque<select name="source" value={value} onChange={e=>onChange(e.target.value)} required>
+   {(['rb1','retifica'] as const).map(p=><optgroup key={p} label={p==='rb1'?'Estoque RB1':'Estoque da retífica'}>{all.filter(s=>s.place===p).map(s=><option key={stockKey(s)} value={stockKey(s)} disabled={s.condition!==STOCK_CONDITIONS[0]}>{label(s)}</option>)}{!all.some(s=>s.place===p)&&<option disabled>Nenhum rolo neste estoque</option>}</optgroup>)}
+   <option value="manual">Fora do estoque · informar dados do rolo</option>
+  </select></label>
+  {sel?<div className="source-card"><span className="badge green">Pronto para uso</span><dl><dt>Identificação</dt><dd>{sel.code||'Sem identificação'}</dd><dt>Perímetro</dt><dd>{f.num(sel.perimeter!)} mm</dd><dt>Diâmetro</dt><dd>{sel.diameter?f.num(sel.diameter)+' mm':'—'}</dd><dt>No estoque desde</dt><dd>{f.fmt(sel.entered)}</dd></dl><small>Ao salvar, o rolo sai automaticamente da bandeja {sel.place==='rb1'?'do estoque RB1':'da retífica'} (posição {sel.slot}).</small></div>
+  :<><div className="form-row"><label>Identificação · opcional<input name="serial" maxLength={100} placeholder="Ex.: RC-012"/></label><label>Perímetro (mm) · opcional<input name="perimeter" type="number" min="1" max="19999" step="0.1" placeholder="Conforme o rolo"/></label></div>
+   <label>Diâmetro (mm) · opcional<input name="diameter" type="number" min="0.01" max="9999" step="0.01" placeholder="Ex.: 850" value={diam} onChange={e=>setDiam(e.target.value)}/></label></>}
+  <label>Destino do rolo retirado<select name="removed_dest" defaultValue={REMOVED_DEST[0]}>{REMOVED_DEST.map(d=><option key={d}>{d}</option>)}</select></label>
+ </>;
+}
+
+// Saída da bandeja. Instalação no forno é feita pela troca de rolo; a transferência retífica → RB1 move o rolo de bandeja.
+function StockOutForm({c,slot,who,when,footer,head,occurred}:{c:ModalCtx;slot:StockSlot;who:ReactNode;when:ReactNode;footer:(l:ReactNode)=>ReactNode;head:(e:string,t:string)=>ReactNode;occurred:()=>string}){
+ const P=PLACES[c.place],[dest,setDest]=useState('');
+ const free=(c.state?.stock||[]).filter(x=>x.place==='rb1'&&!x.entered),transfer=dest==='Transferido para o estoque RB1';
+ const send=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget));const target=free.find(x=>x.slot===Number(f.transfer_slot));
+  c.submit('stock/out',{place:c.place,operator:c.operator,slot:slot.slot,version:slot.version,destination:f.destination,occurred:occurred(),notes:f.notes,...(transfer?{transfer_slot:target?.slot,transfer_version:target?.version}:{})})};
+ return <form onSubmit={send}>{head(P.eyebrow+' · SAÍDA','Retirar rolo da bandeja')}
+  <p className="stock-summary">Posição {slot.slot} · {slot.code||'sem identificação'} · perímetro {c.f.num(slot.perimeter!)} mm<br/><small>Para instalar este rolo no forno, use <b>Registrar troca</b>: o rolo sai da bandeja automaticamente.</small></p>
+  {who}<label>Destino do rolo<select name="destination" required value={dest} onChange={e=>setDest(e.target.value)}><option value="" disabled>Selecione o destino</option>{P.destinations.map(d=><option key={d} disabled={d==='Transferido para o estoque RB1'&&!free.length}>{d}{d==='Transferido para o estoque RB1'&&!free.length?' (estoque RB1 cheio)':''}</option>)}</select></label>
+  {transfer&&<label>Posição livre no estoque RB1<select name="transfer_slot" required defaultValue={free[0]?.slot}>{free.map(x=><option key={x.slot} value={x.slot}>Posição {x.slot}</option>)}</select></label>}
+  {when}<label>Observações · opcional<textarea name="notes" maxLength={2000} placeholder="Ex.: condição da superfície, motivo do descarte…"/></label>{footer(transfer?'Transferir para o RB1':'Registrar saída')}</form>;
 }

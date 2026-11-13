@@ -1,8 +1,8 @@
 // Relatórios do histórico de trocas em PDF e Excel, no padrão visual do RB1 Roll.
 // As bibliotecas são carregadas sob demanda para não pesar no carregamento do painel.
 
-export type ExportEvent={roll_id:number;operator:string;shift:string;occurred:string;reason:string;diameter:number|null;notes:string};
-export type ExportRoll={id:number;name:string;location:string;diameter:number|null;installed:string|null;days:number|null;status:string};
+export type ExportEvent={roll_id:number;operator:string;shift:string;occurred:string;reason:string;diameter:number|null;perimeter?:number|null;notes:string};
+export type ExportRoll={id:number;name:string;location:string;diameter:number|null;perimeter?:number|null;installed:string|null;days:number|null;status:string};
 export type ExportMeta={filters:string[];rolls:ExportRoll[]};
 
 const TZ='America/Sao_Paulo';
@@ -66,7 +66,7 @@ export async function exportPdf(events:ExportEvent[],meta:ExportMeta){
  autoTable(doc,{
   startY:ky+kh+7,margin:{left:M,right:M,top:16,bottom:16},
   head:[['Data','Hora','Turno','Posição','Operador','Ø (mm)','Perímetro (mm)','Motivo','Observações']],
-  body:events.map(e=>[day(e.occurred),hour(e.occurred),e.shift,'Rolo '+e.roll_id,e.operator,e.diameter?fmtNum(e.diameter):'—',e.diameter?fmtNum(Math.round(Math.PI*e.diameter)):'—',e.reason,e.notes||'']),
+  body:events.map(e=>[day(e.occurred),hour(e.occurred),e.shift,'Rolo '+e.roll_id,e.operator,e.diameter?fmtNum(e.diameter):'—',(e.perimeter||e.diameter)?fmtNum(e.perimeter||Math.round(Math.PI*e.diameter!)):'—',e.reason,e.notes||'']),
   styles:{font:'helvetica',fontSize:7.8,textColor:rgb(C.ink),cellPadding:{top:2.4,bottom:2.4,left:2.6,right:2.6},lineColor:rgb(C.border),lineWidth:{bottom:.2},valign:'middle'},
   headStyles:{fillColor:rgb(C.ink),textColor:255,fontStyle:'bold',fontSize:7.2},
   alternateRowStyles:{fillColor:rgb(C.zebra)},
@@ -82,7 +82,7 @@ export async function exportPdf(events:ExportEvent[],meta:ExportMeta){
  autoTable(doc,{
   startY:y+3,margin:{left:M,right:M,bottom:16},
   head:[['Posição','Local','Status','Dias em uso','Ø (mm)','Perímetro (mm)','Última troca']],
-  body:meta.rolls.map(r=>[r.name,r.location,statusLabel[r.status]||r.status,r.days===null?'—':String(r.days),r.diameter?fmtNum(r.diameter):'—',r.diameter?fmtNum(Math.round(Math.PI*r.diameter)):'—',r.installed?day(r.installed)+' '+hour(r.installed):'—']),
+  body:meta.rolls.map(r=>[r.name,r.location,statusLabel[r.status]||r.status,r.days===null?'—':String(r.days),r.diameter?fmtNum(r.diameter):'—',(r.perimeter||r.diameter)?fmtNum(r.perimeter||Math.round(Math.PI*r.diameter!)):'—',r.installed?day(r.installed)+' '+hour(r.installed):'—']),
   styles:{font:'helvetica',fontSize:7.8,textColor:rgb(C.ink),cellPadding:2.4,lineColor:rgb(C.border),lineWidth:{bottom:.2}},
   headStyles:{fillColor:rgb(C.ink),textColor:255,fontStyle:'bold',fontSize:7.2},
   alternateRowStyles:{fillColor:rgb(C.zebra)},
@@ -133,7 +133,7 @@ export async function exportExcel(events:ExportEvent[],meta:ExportMeta){
  heading(ws,'Histórico de trocas',10);
  const h=ws.getRow(6);h.values=['Data','Hora','Turno','Posição','Local','Operador','Ø (mm)','Perímetro (mm)','Motivo','Observações'];header(h);
  events.forEach((e,i)=>{
-  const r=ws.addRow([localDate(e.occurred),hour(e.occurred),e.shift,'Rolo '+e.roll_id,meta.rolls.find(x=>x.id===e.roll_id)?.location||'',e.operator,e.diameter??'—',e.diameter?Math.round(Math.PI*e.diameter):'—',e.reason,e.notes||'']);
+  const r=ws.addRow([localDate(e.occurred),hour(e.occurred),e.shift,'Rolo '+e.roll_id,meta.rolls.find(x=>x.id===e.roll_id)?.location||'',e.operator,e.diameter??'—',e.perimeter||(e.diameter?Math.round(Math.PI*e.diameter):'—'),e.reason,e.notes||'']);
   r.getCell(1).numFmt='dd/mm/yyyy';r.getCell(1).alignment={horizontal:'left'};
   r.getCell(3).font={...font,bold:true,color:{argb:'FF'+(e.shift==='TN'?C.violet:e.shift==='TM'?C.accent:C.ink)}};
   for(const c of [7,8])r.getCell(c).alignment={horizontal:'right'};r.getCell(8).numFmt='#,##0';
@@ -165,7 +165,7 @@ export async function exportExcel(events:ExportEvent[],meta:ExportMeta){
  heading(cs,'Condição atual por posição',7,'Situação de todas as posições no momento da exportação (não depende dos filtros)');
  const ch=cs.getRow(6);ch.values=['Posição','Local','Status','Dias em uso','Ø (mm)','Perímetro (mm)','Última troca'];header(ch);
  meta.rolls.forEach((r,i)=>{
-  const x=cs.addRow([r.name,r.location,statusLabel[r.status]||r.status,r.days??'—',r.diameter??'—',r.diameter?Math.round(Math.PI*r.diameter):'—',r.installed?localDate(r.installed):'—']);
+  const x=cs.addRow([r.name,r.location,statusLabel[r.status]||r.status,r.days??'—',r.diameter??'—',r.perimeter||(r.diameter?Math.round(Math.PI*r.diameter):'—'),r.installed?localDate(r.installed):'—']);
   x.getCell(3).font={...font,bold:true,color:{argb:'FF'+(statusColor[r.status]||C.ink)}};
   x.getCell(7).numFmt='dd/mm/yyyy hh:mm';
   for(const c of [4,5,6,7])x.getCell(c).alignment={horizontal:'center'};x.getCell(6).numFmt='#,##0';

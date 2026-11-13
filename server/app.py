@@ -41,6 +41,9 @@ def init():
             db.execute("INSERT OR IGNORE INTO stock_log SELECT id,'retifica',slot,action,code,perimeter,diameter,condition,destination,operator,shift,occurred,recorded,notes FROM stock_moves")
             db.execute('DROP TABLE stock_moves')
         if 'stock' in old: db.execute('DROP TABLE stock')
+        # Fluxo estoque → forno: perímetro do rolo, origem e destino do rolo retirado.
+        for table, col, kind in [('rolls','perimeter','REAL'),('events','perimeter','REAL'),('events','source','TEXT'),('events','removed_dest','TEXT')]:
+            if col not in {r[1] for r in db.execute(f'PRAGMA table_info({table})')}: db.execute(f'ALTER TABLE {table} ADD COLUMN {col} {kind}')
         for place in STOCK_PLACES:
             for slot in range(1, STOCK_SLOTS + 1):
                 db.execute('INSERT OR IGNORE INTO stock_slots(place,slot) VALUES(?,?)', (place, slot))
@@ -91,6 +94,17 @@ def stock_move(db, path, data, operator):
         if not slot['entered']: raise ValueError('Esta posição da bandeja está vazia.')
         if dt < datetime.fromisoformat(slot['entered']): raise ValueError('A saída deve ser posterior à entrada do rolo.')
         destination = required(data, 'destination', 200)
+        # Transferência retífica → RB1: o rolo entra na posição livre escolhida, com os mesmos dados.
+        if place == 'retifica' and destination == 'Transferido para o estoque RB1':
+            target = db.execute("SELECT * FROM stock_slots WHERE place='rb1' AND slot=?", (data.get('transfer_slot'),)).fetchone()
+            if not target: raise ValueError('Escolha a posição livre no estoque RB1.')
+            if data.get('transfer_version') != target['version']: raise ValueError('O estoque RB1 foi atualizado por outro registro. Atualize a tela.')
+            if target['entered']: raise ValueError('A posição escolhida no estoque RB1 já está ocupada.')
+            moved = f"Transferido da retífica · posição {slot['slot']}"
+            db.execute("UPDATE stock_slots SET code=?,perimeter=?,diameter=?,condition=?,entered=?,operator=?,notes=?,version=version+1 WHERE place='rb1' AND slot=?",
+                       (slot['code'],slot['perimeter'],slot['diameter'],slot['condition'],dt.isoformat(),operator,moved,target['slot']))
+            db.execute('INSERT INTO stock_log VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(secrets.token_hex(12),'rb1',target['slot'],'entrada',slot['code'],slot['perimeter'],slot['diameter'],slot['condition'],None,operator,shift(dt),dt.isoformat(),now(),moved))
+            destination += f" · posição {target['slot']}"
         db.execute('UPDATE stock_slots SET code=NULL,perimeter=NULL,diameter=NULL,condition=NULL,entered=NULL,operator=NULL,notes=NULL,version=version+1 WHERE place=? AND slot=?',(place,slot['slot']))
         values = ('saida', slot['code'], slot['perimeter'], slot['diameter'], slot['condition'], destination)
     db.execute('INSERT INTO stock_log VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(secrets.token_hex(12),place,slot['slot'],*values,operator,shift(dt),dt.isoformat(),now(),notes))
@@ -114,13 +128,30 @@ def mutate(path, data, operator):
             dt = occurred(data)
             if data.get('version') != roll['version']: raise ValueError('Este rolo foi atualizado. Recarregue antes de registrar.')
             if roll['installed'] and dt <= datetime.fromisoformat(roll['installed']): raise ValueError('A troca deve ser posterior à última instalação.')
-            serial = str(data.get('serial') or '').strip()[:100]  # identificação opcional
             reason = required(data,'reason',200)
-            diameter = data.get('diameter')
-            if diameter is not None and (not isinstance(diameter,(int,float)) or not math.isfinite(diameter) or not 0 < diameter < 10000): raise ValueError('Diâmetro inválido.')
             notes = str(data.get('notes',''))[:2000]
-            db.execute('INSERT INTO events VALUES(?,?,?,?,?,?,?,?,?,?,?)',(secrets.token_hex(12),roll['id'],operator,shift(dt),dt.isoformat(),now(),reason,serial,roll['serial'],diameter,notes))
-            db.execute('UPDATE rolls SET installed=?,serial=?,diameter=?,version=version+1 WHERE id=?',(dt.isoformat(),serial or None,diameter,roll['id']))
+            removed = str(data.get('removed_dest') or '').strip()[:200] or None
+            stock = data.get('stock')
+            if isinstance(stock, dict):
+                # Rolo novo sai da bandeja de estoque (somente pronto para uso), na mesma transação.
+                item = db.execute('SELECT * FROM stock_slots WHERE place=? AND slot=?', (stock.get('place'), stock.get('slot'))).fetchone()
+                if not item: raise ValueError('Posição do estoque inválida.')
+                if stock.get('version') != item['version']: raise ValueError('O estoque foi atualizado por outro registro. Atualize a tela.')
+                if not item['entered']: raise ValueError('Não há rolo nesta posição do estoque.')
+                if item['condition'] != STOCK_CONDITIONS[0]: raise ValueError('Este rolo do estoque não está pronto para uso.')
+                if dt < datetime.fromisoformat(item['entered']): raise ValueError('A troca deve ser posterior à entrada do rolo no estoque.')
+                serial, diameter, perimeter = item['code'] or '', item['diameter'], item['perimeter']
+                source = ('Estoque RB1' if item['place'] == 'rb1' else 'Estoque da retífica') + f" · posição {item['slot']}"
+                db.execute('UPDATE stock_slots SET code=NULL,perimeter=NULL,diameter=NULL,condition=NULL,entered=NULL,operator=NULL,notes=NULL,version=version+1 WHERE place=? AND slot=?',(item['place'],item['slot']))
+                db.execute('INSERT INTO stock_log VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(secrets.token_hex(12),item['place'],item['slot'],'saida',item['code'],item['perimeter'],item['diameter'],item['condition'],f"Instalado no forno · {roll['name']} ({roll['location']})",operator,shift(dt),dt.isoformat(),now(),'Saída automática pela troca do rolo'))
+            else:
+                serial = str(data.get('serial') or '').strip()[:100]  # identificação opcional
+                diameter = measure(data, 'diameter', 10000, 'Diâmetro', optional=True)
+                perimeter = measure(data, 'perimeter', 20000, 'Perímetro', optional=True)
+                source = 'Fora do estoque'
+            db.execute('INSERT INTO events(id,roll_id,operator,shift,occurred,recorded,reason,serial,old_serial,diameter,notes,perimeter,source,removed_dest) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                       (secrets.token_hex(12),roll['id'],operator,shift(dt),dt.isoformat(),now(),reason,serial,roll['serial'],diameter,notes,perimeter,source,removed))
+            db.execute('UPDATE rolls SET installed=?,serial=?,diameter=?,perimeter=?,version=version+1 WHERE id=?',(dt.isoformat(),serial or None,diameter,perimeter,roll['id']))
         elif path == '/api/inspections':
             dt = occurred(data)
             checks = data.get('checks',{})

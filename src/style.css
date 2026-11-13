@@ -474,3 +474,7 @@ tbody tr:hover td{background:var(--surface-2)}
 .pin-field input{max-width:160px;font-family:var(--mono);font-size:20px;letter-spacing:.5em}
 .pin-field small{display:block;margin-top:6px;font-size:12px;color:var(--text-3);font-weight:400}
 aside>*{flex-shrink:0}
+.source-card{margin:-2px 0 16px;padding:14px 16px;border-radius:12px;border:1px solid color-mix(in srgb,#16a34a 30%,var(--border));background:color-mix(in srgb,#16a34a 6%,var(--surface))}
+.source-card dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:10px 0 8px;font-size:13px}
+.source-card dt{color:var(--text-3)}.source-card dd{margin:0;text-align:right;font-family:var(--mono);font-size:12.5px}
+.source-card small{font-size:12px;color:var(--text-2)}

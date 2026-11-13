@@ -90,7 +90,17 @@ function change(path:string,b:Record<string,unknown>){
   }else{
    if(!slot.entered)throw new Error('Esta posição da bandeja está vazia.');
    if(dt<new Date(slot.entered))throw new Error('A saída deve ser posterior à entrada do rolo.');
-   const destination=text(b,'destination',200);
+   let destination=text(b,'destination',200);
+   // Transferência retífica → RB1: o rolo entra na posição livre escolhida, com os mesmos dados.
+   if(place==='retifica'&&destination==='Transferido para o estoque RB1'){
+    const t=s.stock.find(x=>x.place==='rb1'&&x.slot===b.transfer_slot);if(!t)throw new Error('Escolha a posição livre no estoque RB1.');
+    if(t.version!==b.transfer_version)throw new Error('O estoque RB1 foi atualizado por outro registro. Atualize a tela.');
+    if(t.entered)throw new Error('A posição escolhida no estoque RB1 já está ocupada.');
+    const moved='Transferido da retífica · posição '+slot.slot;
+    Object.assign(t,{code:slot.code,perimeter:slot.perimeter,diameter:slot.diameter,condition:slot.condition,entered:occurred,operator,notes:moved,version:t.version+1});
+    s.stock_moves.unshift({...base,id:crypto.randomUUID(),place:'rb1',slot:t.slot,action:'entrada',code:slot.code,perimeter:slot.perimeter,diameter:slot.diameter,condition:slot.condition,destination:null,notes:moved});
+    destination+=' · posição '+t.slot;
+   }
    s.stock_moves.unshift({...base,action:'saida',code:slot.code,perimeter:slot.perimeter,diameter:slot.diameter,condition:slot.condition,destination});
    Object.assign(slot,{...emptySlot(place,slot.slot),version:slot.version+1});
   }
@@ -107,9 +117,23 @@ function change(path:string,b:Record<string,unknown>){
    if(path==='replacements'){
     if(r.version!==b.version)throw new Error('Rolo atualizado por outro registro. Atualize a tela.');
     if(r.installed&&dt<=new Date(r.installed))throw new Error('A troca deve ser posterior à última instalação.');
-    const serial=String(b.serial||'').trim().slice(0,100),reason=text(b,'reason',200),diameter=b.diameter===null?null:Number(b.diameter);
-    if(diameter!==null&&(!Number.isFinite(diameter)||diameter<=0||diameter>=10000))throw new Error('Diâmetro inválido.');
-    s.events.unshift({id,roll_id:r.id,operator,shift,occurred,reason,serial,old_serial:r.serial,diameter,notes});Object.assign(r,{serial:serial||null,diameter,installed:occurred,version:r.version+1});
+    const reason=text(b,'reason',200),removed_dest=String(b.removed_dest||'').trim().slice(0,200)||null;
+    let serial:string,diameter:number|null,perimeter:number|null,source:string;
+    const st=b.stock as {place?:string;slot?:number;version?:number}|null|undefined;
+    if(st&&typeof st==='object'){
+     // Rolo novo sai da bandeja de estoque (somente pronto para uso), na mesma operação.
+     const x=s.stock.find(y=>y.place===st.place&&y.slot===st.slot);if(!x)throw new Error('Posição do estoque inválida.');
+     if(x.version!==st.version)throw new Error('O estoque foi atualizado por outro registro. Atualize a tela.');
+     if(!x.entered)throw new Error('Não há rolo nesta posição do estoque.');
+     if(x.condition!==STOCK_CONDITIONS[0])throw new Error('Este rolo do estoque não está pronto para uso.');
+     if(dt<new Date(x.entered))throw new Error('A troca deve ser posterior à entrada do rolo no estoque.');
+     serial=x.code||'';diameter=x.diameter;perimeter=x.perimeter;source=(x.place==='rb1'?'Estoque RB1':'Estoque da retífica')+' · posição '+x.slot;
+     s.stock_moves.unshift({id:crypto.randomUUID(),place:x.place,slot:x.slot,operator,shift,occurred,recorded:now,notes:'Saída automática pela troca do rolo',action:'saida',code:x.code,perimeter:x.perimeter,diameter:x.diameter,condition:x.condition,destination:`Instalado no forno · ${r.name} (${r.location})`});
+     Object.assign(x,{...emptySlot(x.place,x.slot),version:x.version+1});
+    }else{
+     serial=String(b.serial||'').trim().slice(0,100);diameter=measure(b,'diameter',10000,'Diâmetro',true);perimeter=measure(b,'perimeter',20000,'Perímetro',true);source='Fora do estoque';
+    }
+    s.events.unshift({id,roll_id:r.id,operator,shift,occurred,reason,serial,old_serial:r.serial,diameter,perimeter,source,removed_dest,notes});Object.assign(r,{serial:serial||null,diameter,perimeter,installed:occurred,version:r.version+1});
    }else if(path==='inspections'){
     const answers=b.checks as Record<string,string>;
     if(!answers||Object.keys(answers).length!==checks.length||checks.some(k=>!['ok','issue','na'].includes(answers[k])))throw new Error('Responda todos os itens do checklist.');
